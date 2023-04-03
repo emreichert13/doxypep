@@ -3,7 +3,9 @@ title: "R Notebook"
 output: html_notebook
 ---
 
-Doxy PEP Model Impact
+Doxy PEP Model
+Emily Reichert, 03.23
+Explore impact of DoxyPEP uptake on US MSM-like population
 
 ```{r}
 #load necessary packages
@@ -18,11 +20,11 @@ library(dplyr)
 library(tidyr)
 library(stringr)
 
-source("~/Documents/2021 Grad lab research/DOXYPEP/DOXYfunctions.R")
+source("~/Documents/2021 Grad lab research/DOXYPEP/DoxyPEPcode/DOXYfunctions.R")
 ```
 
 I. Set parameters and initial conditions.
-
+(Parameters here from MLE to 3% mean equilibrium GC prevalence)
 ```{r}
 # Set parameters that will stay constant throughout model
 pop = 10^6                    #pop size
@@ -43,7 +45,7 @@ rho = 1/(20*365)     #model entry/exit rate
 omega_a = 10^-8      #Pr of emergence of resistance on treatment with A (ceftriaxone)
 omega_b = 0          #Pr of emergence of resistance on treatment with B (doxy)
 prA = 1              #Pr of treatment with A
-prB = 0              #Pr of DOXYPEP (vary this coverage %)
+prB = 0              #Pr of DOXYPEP (we will vary this coverage %)
 fA = 0.98            #relative fitness, resistant to A
 fB = 0.98            #relative fitness, resistant to B (is this reasonable??)
 fAB = fA*fB          #relative fitness, dual resistance
@@ -142,12 +144,10 @@ parms <- list(g=g,
               kappa = kappa)
 ```
 
-############ SCENARIO 1 - DOXYPEP
+II. Run DoxyPEP Model
 
 ```{r}
-#TROUBLESHOOT
-
-#1. Set up the ODE system of equations
+#Set up the ODE system of equations
 doxyPEP.SI <- function(t, x, parms){
     with(as.list(c(t, x, parms)),{
     N = c(N1, N2, N3) #total population
@@ -245,6 +245,8 @@ doxy_sim50 <- temp[[4]]
 doxy_sim75 <- temp[[5]]
 ```
 
+III. Analyze Model Output
+
 ```{r}
  #ensure the total pop size does not change
 doxy_sim0 %>% mutate(RowSum=rowSums(.[setdiff(names(.),c("time", "Inc", "prevB", "prevA", "prevAB", "prevGC", "ARx"))])) %>% 
@@ -314,6 +316,7 @@ doxy_sim_all <- doxy_sim_all %>%
          IR = Inc/(S1+S2+S3)) %>%
   ungroup()
 
+#output key outcomes by DoxyPEP uptake level
 doxy_sim_all %>%
   group_by(DoxyPEP) %>%
   summarise(CumInc5 = CumInc[time == 1825],
@@ -326,6 +329,7 @@ doxy_sim_all %>%
 ```
 
 ```{r}
+#Visualize prev and IR of gonorrhea over time, by DoxyPEP uptake level
 resB <- doxy_sim_all %>%
   group_by(DoxyPEP) %>%
   summarise(MinT = min(time[prevB >= 0.87]),
@@ -396,6 +400,7 @@ cumcases %>%
 ```
 
 ```{r}
+#Visualize PR and IRR relative to baseline (0% DoxyPEP uptake)
 #pdf("DOXYPEP_PR.pdf", height = 3, width = 3)
 ggplot() +
   geom_line(data = cumcases, aes(x = time/365, y = PR, col = factor(DoxyPEP)), size = 1) +
@@ -415,6 +420,7 @@ ggplot() +
 
 
 ```{r}
+#Visualize circulating strains (by resistance profile) over time
 infectiondat <- doxy_sim_long_all %>%
   filter(Profile != "S" & InfectState != "Exposed") %>%
   group_by(DoxyPEP, time, ResistState) %>%
