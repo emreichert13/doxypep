@@ -1,15 +1,14 @@
 
+##Run Sens Analysis##
+# E Reichert, 03.2023
+
 library(knitr)
 
-##Run Sens Analysis
-
-##PROPERTIES OF DRUG B
+##I. PROPERTIES OF DRUG B
 #Set parameter values for fB and omegaB that we will explore
 #Must first comment out values of fB and omega_b in "DOXYtransmission.Rmd" script
-
 fB_range <- c(seq(0.8,1,0.05)) #ranges from 0-20% fitness cost
 omega_b_range <- c(0, 10^-8, 10^-4) #ranges for Pr of resistance emergence upon treatment
-
 
 #run ODE models over all combinations of these params
 SensAnalyze <- function (fB_range, omega_b_range) {
@@ -34,9 +33,10 @@ SensAnalyze <- function (fB_range, omega_b_range) {
 }
 
 SensResults <- SensAnalyze(fB_range, omega_b_range)
-write.csv(SensResults, "SensResults.csv")
-SensResults <- read.csv("SensResults.csv")
+#write.csv(SensResults, "SensResults.csv")
+#SensResults <- read.csv("SensResults.csv")
 
+#calculate model outcomes
 table_res <- SensResults %>% group_by(DoxyPEP, fB, omega_b) %>%
   summarise(MinA = round(min(time[prevA >= 0.05])/365,3),
             MinAB = round(min(time[prevAB >= 0.05])/365,3),
@@ -62,6 +62,7 @@ SensResults$omega_b[SensResults$omega_b == "1e-04"] <- "1e-4"
 resB$omega_b <- as.character(resB$omega_b)
 resB$omega_b[resB$omega_b == "1e-04"] <- "1e-4"
 
+#Visualize prevalence of GC over time, by properties of Drug B (doxycycline)
 #pdf("DOXYPEP_SensAnalysisPrev.pdf", height = 6, width = 8, encoding = "Greek.enc")
 ggplot() +
   geom_line(data = SensResults, aes(x = time/365, y = prevGC*100, col = factor(DoxyPEP)), size = 1) +
@@ -93,6 +94,7 @@ resB <- cumcases %>%
             IRR = IRR[time == MinT],
             CasesAverted = CasesAverted[time == MinT])
 
+#Visualize PR over time relative to baseline (0% DoxyPEP uptake), by properties of Drug B (Doxycycline)
 #pdf("DOXYPEP_SensAnalysisPR.pdf", height = 6, width = 8, encoding = "Greek.enc")
 ggplot() +
   geom_line(data = cumcases, aes(x = time/365, y = PR, col = factor(DoxyPEP)), size = 1) +
@@ -108,7 +110,7 @@ LossA <- SensResults %>%
   group_by(DoxyPEP, fB, omega_b) %>%
   summarise(LossA = min(time[prevA >= 0.05])/365)
 
-### EFFECTIVENESS OF DOXYPEP
+### II. EFFECTIVENESS OF DOXYPEP
 # Must first comment out baseline value for kappa in "DOXYtransmission.Rmd" script
 kappa_range <- c(seq(0,0.8,0.2))
 
@@ -131,10 +133,10 @@ SensAnalyze <- function (kappa) {
 }
 
 SensResults2 <- SensAnalyze(kappa_range)
-write.csv(SensResults2, "SensResults2.csv")
-SensResults2 <- read.csv("SensResults2.csv")
+#write.csv(SensResults2, "SensResults2.csv")
+#SensResults2 <- read.csv("SensResults2.csv")
 
-
+#calculate model outcomes
 table_res2 <- SensResults2 %>% group_by(DoxyPEP, kappa) %>%
   summarise(MinA = round(min(time[prevA >= 0.05])/365,3),
             MinAB = round(min(time[prevAB >= 0.05])/365,3),
@@ -153,6 +155,7 @@ resB2 <- SensResults2 %>%
             Inc = Inc[time == MinT],
             prevGC = prevGC[time == MinT])
 
+#Visualize prevalence over time, by DoxyPEP effectiveness per exposure
 g1 <- ggplot() +
   geom_line(data = SensResults2, aes(x = time/365, y = prevGC*100, col = factor(DoxyPEP)), size = 1) +
   geom_point(data = resB2, aes(x = MinT/365, y = prevGC*100, col = factor(DoxyPEP)), size = 3, shape = 19) +
@@ -181,6 +184,7 @@ resB2 <- cumcases2 %>%
             IRR = IRR[time == MinT],
             CasesAverted = CasesAverted[time == MinT])
 
+#Visualize PR over time relative to baseline (0% DoxyPEP uptake), by DoxyPEP effectiveness per exposure
 g2 <- ggplot() +
   geom_line(data = cumcases2, aes(x = time/365, y = PR, col = factor(DoxyPEP)), size = 1) +
   geom_point(data = resB2, aes(x = MinT/365, y = PR, col = factor(DoxyPEP)), size = 3, shape = 19) +
@@ -199,7 +203,7 @@ LossA <- SensResults2 %>%
   group_by(DoxyPEP, kappa) %>%
   summarise(LossA = min(time[prevA >= 0.05])/365)
 
-####  DOXY RESISTANCE AT MODEL START
+#### III. DOXY RESISTANCE AT MODEL START
 # Must first comment out baseline value for resB in "DOXYtransmission.Rmd" script
 resB_range <- c(seq(0.2,0.8,0.2))
 
@@ -222,10 +226,10 @@ SensAnalyze <- function (resB) {
 }
 
 SensResults3 <- SensAnalyze(resB_range)
-write.csv(SensResults3, "SensResults3.csv")
-SensResults3 <- read.csv("SensResults3.csv")
+#write.csv(SensResults3, "SensResults3.csv")
+#SensResults3 <- read.csv("SensResults3.csv")
 
-
+#calculate model outcomes
 table_res3 <- SensResults3 %>% group_by(DoxyPEP, resB) %>%
   summarise(MinA = round(min(time[prevA >= 0.05])/365,3),
             MinAB = round(min(time[prevAB >= 0.05])/365,3),
@@ -244,6 +248,7 @@ resB3 <- SensResults3 %>%
             Inc = Inc[time == MinT],
             prevGC = prevGC[time == MinT])
 
+#Visualize prevalence over time, by doxy resistance at model start
 #pdf("DOXYPEP_KappaAnalysis.pdf", height = 3, width = 9, encoding = "Greek.enc")
 g3 <- ggplot() +
   geom_line(data = SensResults3, aes(x = time/365, y = prevGC*100, col = factor(DoxyPEP)), size = 1) +
@@ -274,6 +279,7 @@ resB3 <- cumcases3 %>%
             IRR = IRR[time == MinT],
             CasesAverted = CasesAverted[time == MinT])
 
+#Visualize PR over time relative to baseline (0% DoxyPEP uptake), by doxy resistance at model start
 g4 <- ggplot() +
   geom_line(data = cumcases3, aes(x = time/365, y = PR, col = factor(DoxyPEP)), size = 1) +
   geom_point(data = resB3, aes(x = MinT/365, y = PR, col = factor(DoxyPEP)), size = 3, shape = 19) +
@@ -284,7 +290,7 @@ g4 <- ggplot() +
   facet_grid(~paste0("PrevB = " , resB)) + ggtitle("B.")
 
 library(gridExtra)
-pdf("DOXYPEP_SensAnalysisRESB.pdf", height = 6, width = 8)
+#pdf("DOXYPEP_SensAnalysisRESB.pdf", height = 6, width = 8)
 grid.arrange(g3, g4, nrow = 2)
-dev.off()
+#dev.off()
 
