@@ -3,7 +3,10 @@ title: "R Notebook"
 output: html_notebook
 ---
 
-Doxy PEP Model Impact
+E Reichert 03.2023
+
+DoxyPEP Model Impact
+with DoxyPEP only targeted to high sexual activity group (fixed 10% of population)
 
 ```{r}
 #load necessary packages
@@ -18,7 +21,7 @@ library(dplyr)
 library(tidyr)
 library(stringr)
 
-source("~/Documents/2021 Grad lab research/DOXYPEP/DOXYfunctions.R")
+source("~/Documents/2021 Grad lab research/DOXYPEP/DoxyPEPcode/DOXYfunctions.R")
 ```
 
 I. Set parameters and initial conditions.
@@ -142,12 +145,10 @@ parms <- list(g=g,
               kappa = kappa)
 ```
 
-############ SCENARIO 1 - DOXYPEP
+II. Run DoxyPEP Model
 
 ```{r}
-#TROUBLESHOOT
-
-#1. Set up the ODE system of equations
+#Set up the ODE system of equations
 doxyPEP.SI <- function(t, x, parms){
     with(as.list(c(t, x, parms)),{
     N = c(N1, N2, N3) #total population
@@ -231,7 +232,7 @@ doxyPEP.SI <- function(t, x, parms){
 #run ODE models over all combinations of these params
 RunODE <- function (x) {
   #provide column names
-      parms$prB <- c(0,0,x)
+      parms$prB <- c(0,0,x) #probability of DoxyPEP set to 0 in sexual activity groups 1-2 (low-intermediate)
       doxy_sim <- as.data.frame(ode(inits, dt, doxyPEP.SI, parms=parms))   
   return(doxy_sim)
 }
@@ -245,6 +246,8 @@ doxy_sim25 <- temp[[3]]
 doxy_sim50 <- temp[[4]]
 doxy_sim75 <- temp[[5]]
 ```
+
+III. Analyze Model Output
 
 ```{r}
  #ensure the total pop size does not change
@@ -265,7 +268,6 @@ doxy_sim10 <- doxy_sim10 %>% select(-Doxy1, -Doxy2, -Doxy3)
 doxy_sim25 <- doxy_sim25 %>% select(-Doxy1, -Doxy2, -Doxy3)
 doxy_sim50 <- doxy_sim50 %>% select(-Doxy1, -Doxy2, -Doxy3)
 doxy_sim75 <- doxy_sim75 %>% select(-Doxy1, -Doxy2, -Doxy3)
-
 ```
 
 ```{r}
@@ -315,6 +317,7 @@ SI.outputs(doxy_sim75, doxy_sim_long75)
 ```
 
 ```{r}
+#View model outcomes by DoxyPEP utilization
 doxy_sim_all <- doxy_sim_all %>%
   group_by(DoxyPEP) %>%
   mutate(CumInc = cumsum(Inc),
@@ -322,6 +325,7 @@ doxy_sim_all <- doxy_sim_all %>%
          IR = Inc/(S1+S2+S3)) %>%
   ungroup()
 
+#output key outcomes by DoxyPEP uptake level
 doxy_sim_all %>%
   group_by(DoxyPEP) %>%
   summarise(CumInc5 = CumInc[time == 1825],
@@ -334,6 +338,7 @@ doxy_sim_all %>%
 ```
 
 ```{r}
+#Visualize prev and IR of gonorrhea over time, by DoxyPEP uptake level
 resB <- doxy_sim_all %>%
   group_by(DoxyPEP) %>%
   summarise(MinT = min(time[prevB >= 0.87]),
@@ -380,6 +385,7 @@ ggplot() +
 ```
 
 ```{r}
+#check infection burden by risk group
 check <- doxy_sim_long_all %>%
   group_by(time, RiskGroup, InfectState, DoxyPEP) %>%
   filter(InfectState == "Asymptomatic Infected" | InfectState == "Symptomatic Infected") %>%
@@ -417,6 +423,7 @@ cumcases %>%
 ```
 
 ```{r}
+#Visualize PR and IRR relative to baseline (0% DoxyPEP uptake)
 #pdf("DOXYPEP_PRHI.pdf", height = 3, width = 3)
 ggplot() +
   geom_line(data = cumcases, aes(x = time/365, y = PR, col = factor(DoxyPEP)), size = 1) +
@@ -436,6 +443,7 @@ ggplot() +
 
 
 ```{r}
+#Visualize circulating strains (by resistance profile) over time
 infectiondat <- doxy_sim_long_all %>%
   filter(Profile != "S" & InfectState != "Exposed") %>%
   group_by(DoxyPEP, time, ResistState) %>%
@@ -449,12 +457,10 @@ infectiondat <- doxy_sim_long_all %>%
 #pdf("ResistProfile.pdf", width = 6, height = 5)
 #plot prevalence of gonorrhea over time, by Resistance Profile
 ggplot(infectiondat,aes(x=time/365, y=percent*100, fill = factor(ResistLabels, levels = c("Neither", "Doxycycline only", "Ceftriaxone only", "Ceftriaxone and\nDoxycycline")))) +
-  geom_area() + scale_fill_manual(values = c("#0076BB","#E9E4A6", "#E9A17C", "#FF3200")) +
+  geom_area() + scale_fill_manual(values = c("turquoise3", "#E9A17C", "mediumpurple", "deeppink2")) +
   theme_classic() + facet_wrap(~DoxyPEP) +
   xlab("Years") + ylab("% of Gonococcal Infections") + labs(fill = "Resistance Profile") +
   theme(legend.position = c(0.87,0.2)) +
   geom_hline(yintercept = 5, col = "white", linetype = "dashed") + geom_hline(yintercept = 87, col = "white", linetype = "dotted")
-  #geom_vline(aes(xintercept = LossOne), col = "white", linetype = "dashed") + 
-  #geom_vline(aes(xintercept = LossBoth), col = "white") + xlim(c(0,40))
 #dev.off()
 ```

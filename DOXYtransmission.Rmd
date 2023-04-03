@@ -439,7 +439,5 @@ ggplot(infectiondat,aes(x=time/365, y=percent*100, fill = factor(ResistLabels, l
   xlab("Years") + ylab("% of Gonococcal Infections") + labs(fill = "Resistance Profile") +
   theme(legend.position = c(0.87,0.2)) +
   geom_hline(yintercept = 5, col = "white", linetype = "dashed") + geom_hline(yintercept = 87, col = "white", linetype = "dotted")
-  #geom_vline(aes(xintercept = LossOne), col = "white", linetype = "dashed") + 
-  #geom_vline(aes(xintercept = LossBoth), col = "white") + xlim(c(0,40))
 #dev.off()
 ```
