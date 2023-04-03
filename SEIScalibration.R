@@ -5,7 +5,7 @@
 #Model Calibration
 #see what parameters lead to under status quo conditions
 
-source("~/Documents/2021 Grad lab research/DOXYPEP/DOXYfunctions.R")
+source("~/Documents/2021 Grad lab research/DOXYPEP/DoxyPEPcode/DOXYfunctions.R")
 library(deSolve)
 library(dplyr)
 library(tidyr)
@@ -16,19 +16,14 @@ library(ggplot2)
 #parameters that will stay constant throughout model
 pop = 10^6                                           #pop size
 pop.p = c(0.3, 0.6, 0.1)                             #relative size of each risk group; low, M, high
-#activities = c(1*1.16/365, 5*1.16/365, 20*1.16/365)  #sexual contacts per day
 
 rho = 1/(20*365)     #model entry/exit rate
 omega_a = 10^-8      #Pr of emergence of resistance on treatment with A (ceftriaxone)
-#omega_b = 0.01      #Pr of emergence of resistance on treatment with B (new drug)
 prA = 1              #Pr of treatment with A
-#prB = 0.5           #Pr of treatment with B
 fA = 0.98            #relative fitness, resistant to A
-#fB = 0.90           #relative fitness, resistant to B (is this reasonable??)
-#fAB = fA*fB         #relative fitness, dual resistance
-pi_s = 0.9          #Pr of retreatment if initial treatment failure, symptomatic
-resA = 0.0001       #initial prev of resistance to A
-gamma = 1/1
+pi_s = 0.9           #Pr of retreatment if initial treatment failure, symptomatic
+resA = 0.0001        #initial prev of resistance to A
+gamma = 1/1          #rate of removal from exposure compartment (1/day)
 
 #Set model duration + initial conditions
 
@@ -50,7 +45,7 @@ gc_md <- round(N2*x*0.154,0)
 gc_hi <- round(N3*x*0.817,0)
 
 #estimated proportion of symp. infections at cross-sectional point in time
-prev_symp <- 0.10
+prev_symp <- 0.089
 Y_gc_lo <- gc_lo*prev_symp
 Z_gc_lo <- gc_lo*(1-prev_symp)
 Y_gc_md <- gc_md*prev_symp
@@ -80,8 +75,8 @@ calibration.SI <- function(t, x, parms){
   with(as.list(c(t, x, parms)),{
     N = c(N1, N2, N3) #total population
     S = c(S1, S2, S3) #not infected
-    E0 = c(E01, E02, E03)
-    Ea = c(Ea1, Ea2, Ea3)
+    E0 = c(E01, E02, E03) #exposed, no resistance
+    Ea = c(Ea1, Ea2, Ea3) #exposed, resistant to A
     Y0 = c(Y01, Y02, Y03) #symptomatic infected, no resistance
     Ya = c(Ya1, Ya2, Ya3) #symptomatic infected, resistant to A
     Z0 = c(Z01, Z02, Z03) #asymptomatic infected, no resistance
@@ -97,11 +92,11 @@ calibration.SI <- function(t, x, parms){
       pi_s*Tsr*Ya +
       g*(Y0 + Ya + Z0 + Za) + 
       rho*(S + Y0 + Ya + Z0 + Za) - rho*S
-    #infections w/ no resistance
+    #exposed + infected w/ no resistance
     dE0 <- (beta %*% (Y0+Z0)*S) - gamma*E0
     dY0 <- sigma*gamma*E0 - Ts*Y0 - g*Y0 - rho*Y0
     dZ0 <- (1-sigma)*gamma*E0- Tm*Z0 - g*Z0 - rho*Z0
-    #infections w/ resistance to A
+    #exposed + infected w/ resistance to A
     dEa <- fA*(beta %*% (Ya+Za)*S) - gamma*Ea
     dYa <- sigma*gamma*Ea +
       omega_a*prA*Ts*Y0 - 
@@ -120,13 +115,13 @@ calibration.SI <- function(t, x, parms){
 ### model parameters from MLE fitting  ###
 ##########################################
 
-#start with parameter values from Tuite et al. 2017
+#start with parameter values from Reichert et al. 2023
 theta <- c(logit.b=logit(0.46),  #transmission probability
-           log.c_min=log(1.21),  #min rate of partner change
+           log.c_min=log(1.22),  #min rate of partner change
            logit.epsilon=logit(0.24), #epsilon
            logit.sigma = logit(0.60), #pr of incident symptomatic infection
            log.Ts=log(0.031*365), #duration of infectiousness if symptomatic (days) = average time to treatment
-           log.g=log(.459*365), #duration of infectiousness if asymptomatic and untreated (days)
+           log.g=log(.462*365), #duration of infectiousness if asymptomatic and untreated (days)
            logit.Tm =logit(0.40)) #screening rate per year
 
 
@@ -198,16 +193,12 @@ Ts =1/(exp(theta.fit[5]))   #time to treatment for symptomatic infection
 Tm = ilogit(theta.fit[7])/365   #screening rate (time to treatment for asymptomatic infection)
 rho = 1/(20*365)     #model entry/exit rate
 omega_a = 10^-8      #Pr of emergence of resistance on treatment with A (ceftriaxone)
-#omega_b = 0.01      #Pr of emergence of resistance on treatment with B (new drug)
 prA = 1              #Pr of treatment with A
-#prB = 0.5           #Pr of treatment with B
 fA = 0.98            #relative fitness, resistant to A
-#fB = 0.90           #relative fitness, resistant to B (is this reasonable??)
-#fAB = fA*fB         #relative fitness, dual resistance
 pi_s = 0.90          #Pr of retreatment if initial treatment failure, symptomatic
 Tsr = Ts/3           #time to retreatment for symptomatic infection, if failure
 resA = 0.0001        #initial prev of resistance to A
-gamma = 1
+gamma = 1            #rate of removal from exposure compartment (1/day)
 
 #Set model duration + initial conditions
 years = 2
@@ -227,7 +218,7 @@ gc_md <- round(N2*x*0.154,0)
 gc_hi <- round(N3*x*0.817,0)
 
 #estimated proportion of symp. infections at cross-sectional point in time
-prev_symp <- 0.10 #(.6*(.026))/(.6*(.026)+.4*(.39))
+prev_symp <- 0.089
 Y_gc_lo <- gc_lo*prev_symp
 Z_gc_lo <- gc_lo*(1-prev_symp)
 Y_gc_md <- gc_md*prev_symp
@@ -280,11 +271,16 @@ prev_GC_calibration
 prev_resistance_calibration <- sum(end[,17:22])/(sum(end[,8:22]))
 prev_resistance_calibration
 
+#cross-section prev. of exposed at t=end years (for initiating transmission model)
 (end$E01 + end$Ea1)/(end$E01 + end$Ea1 + end$Y01 + end$Z01+ end$Ya1 + end$Za1)
 (end$E02 + end$Ea2)/(end$E02 + end$Ea2 + end$Y02 + end$Z02+ end$Ya2 + end$Za2)
 (end$E03 + end$Ea3)/(end$E03 + end$Ea3 + end$Y03 + end$Z03+ end$Ya3 + end$Za3)
 
+#cross-section prev. of symptomatic at t=end years (for initiating transmission model)
+(end$Y01+end$Y02+end$Y03+end$Ya1+end$Ya2+end$Ya3)/
+  (end$Y01+end$Y02+end$Y03+end$Ya1+end$Ya2+end$Ya3 + end$Z01+end$Z02+end$Z03+end$Za1+end$Za2+end$Za3)
 
+#view prevalence distribution over 2-yr calibration period
 calibration_sim <- calibration_sim %>%
   mutate(prev_GC = (Y01 + Y02 + Y03 + Z01 + Z02 + Z03 + Ya1 + Ya2 + Ya3 + Za1 + Za2 + Za3)/10^6)
 
@@ -295,7 +291,7 @@ hist(calibration_sim$prev_GC)
 #define range
 p = seq(0, 0.10, length=100)
 #create plot of Beta distribution with shape parameters 2 and 10
-vars <- estBetaParams(mu = 0.03, var = 1.47e-6)
+vars <- estBetaParams(mu = 0.03, var = 1.47e-5)
 plot(p, dbeta(p, vars$alpha, vars$beta), type='l')
 plot(p, pbeta(p, vars$alpha, vars$beta), type='l')
 
