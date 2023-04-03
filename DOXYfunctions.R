@@ -1,3 +1,5 @@
+## List of Functions for DoxyPEP project ##
+# E Reichert, 03.2023
 
 # clean output of ODE solver into long format
 SI.clean <- function(data){
@@ -145,42 +147,6 @@ estBetaParams <- function(mu, var) {
   alpha <- ((1 - mu) / var - 1 / mu) * mu ^ 2
   beta <- alpha * (1 / mu - 1)
   return(params = list(alpha = alpha, beta = beta))
-}
-
-# Calibration Model (Drug A Only)
-calibration.SI <- function(t, x, parms){
-  with(as.list(c(t, x, parms)),{
-    N = c(N1, N2, N3) #total population
-    S = c(S1, S2, S3) #not infected
-    Y0 = c(Y01, Y02, Y03) #symptomatic infected, no resistance
-    Ya = c(Ya1, Ya2, Ya3) #symptomatic infected, resistant to A
-    Z0 = c(Z01, Z02, Z03) #asymptomatic infected, no resistance
-    Za = c(Za1, Za2, Za3) #asymptomatic infected, resistant to A
-    #makes 3x3 contact matrix
-    activities <- c(1*c_min/365, 5*c_min/365, 20*c_min/365)
-    beta <- (1-epsilon)*outer(activities, activities)/sum(pop*pop.p*activities) + 
-      epsilon*activities/(pop*pop.p)*diag(3)
-    beta <- beta * b #contacts * transmission pr per partnership
-    #susceptibles
-    dS <- -beta %*% ((Y0 + Z0) + fA*(Ya+Za)) *S + 
-      (1-omega_a*prA)*(Ts*Y0 + Tm*Z0) +
-      pi_s*Tsr*Ya +
-      g*(Y0 + Ya + Z0 + Za) + 
-      rho*(S + Y0 + Ya + Z0 + Za) - rho*S
-    #infections w/ no resistance
-    dY0 <- sigma*(beta %*% (Y0+Z0)*S) - Ts*Y0 - g*Y0 - rho*Y0
-    dZ0 <- (1-sigma)*(beta %*% (Y0+Z0)*S) - Tm*Z0 - g*Z0 - rho*Z0
-    #infections w/ resistance to A
-    dYa <- sigma*fA*(beta %*% (Ya+Za)*S) +
-      omega_a*prA*Ts*Y0 - 
-      pi_s*Tsr*Ya -
-      g*Ya - rho*Ya
-    dZa <- (1-sigma)*fA*(beta %*% (Ya+Za)*S) +
-      omega_a*prA*Tm*Z0 -
-      g*Za - rho*Za
-    der <- c(dS, dY0, dZ0, dYa, dZa)
-    list(der)
-  })
 }
 
 logit<-function(x) {log(x/(1-x))}
