@@ -320,12 +320,14 @@ doxy_sim_all <- doxy_sim_all %>%
 doxy_sim_all %>%
   group_by(DoxyPEP) %>%
   summarise(CumInc5 = CumInc[time == 1825],
-            CumInc10 = CumInc[time == 3650],
-            CumInc15 = CumInc[time == 5475],
             CumInc20 = CumInc[time == 7300],
             Time87 = min(time[prevB >= 0.87])/365,
             ARx5 = CumARx[time == 1825],
-            ARx20 = CumARx[time == 5475])
+            ARx20 = CumARx[time == 5475]) %>%
+  mutate(Rel_CI5 = 1-CumInc5/CumInc5[DoxyPEP == "0%"],
+            Rel_CI20 = 1-CumInc20/CumInc20[DoxyPEP == "0%"],
+            Rel_A5 = 1-ARx5/ARx5[DoxyPEP == "0%"],
+            Rel_A20 = 1-ARx20/ARx20[DoxyPEP == "0%"])
 ```
 
 ```{r}
