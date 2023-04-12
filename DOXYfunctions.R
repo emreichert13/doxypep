@@ -85,16 +85,16 @@ SI.outputs <- function(data, data_long) {
   #overall prevalence of gonorrhea at t=end
   prev_GC <- rowSums(end[setdiff(names(end),c("time", "S1", "S2", "S3", "E01", "E02", "E03", "Ea1", "Ea2", "Ea3",
                                                   "Eb1", "Eb2", "Eb3", "Eab1", "Eab2", "Eab3", "DoxyPEP", 
-                                              "Inc", "prevB", "prevA", "prevAB", "prevGC", "ARx"))])/10^6
+                                              "Inc", "prevB", "prevA", "prevAB", "prev0", "prevGC", "ARx"))])/10^6
   
   #proportion of cases w/ some resistance at t=end
   prev_resistance <- rowSums(end[setdiff(names(end),c("time", "S1", "S2", "S3", "E01", "E02", "E03", "Ea1", "Ea2", "Ea3",
                                                       "Eb1", "Eb2", "Eb3", "Eab1", "Eab2", "Eab3", "Y01", "Y02", "Y03", 
                                                       "Z01", "Z02", "Z03", "DoxyPEP", "Inc", "prevB", "prevA", "prevAB", 
-                                                      "prevGC", "ARx"))])/
+                                                      "prev0", "prevGC", "ARx"))])/
     rowSums(end[setdiff(names(end),c("time", "S1", "S2", "S3", "E01", "E02", "E03", "Ea1", "Ea2", "Ea3",
                                                                        "Eb1", "Eb2", "Eb3", "Eab1", "Eab2", "Eab3", 
-                                     "DoxyPEP", "Inc", "prevB", "prevA", "prevAB", "prevGC", "ARx"))])
+                                     "DoxyPEP", "Inc", "prevB", "prevA", "prevAB", "prev0", "prevGC", "ARx"))])
   
   data_cond <- data_long %>%
     group_by(time, Profile) %>%
@@ -118,7 +118,7 @@ SI.outputs <- function(data, data_long) {
   time_loss = data[data$time == Loss_Each5,]
   prev_GC_loss <- rowSums(time_loss[setdiff(names(time_loss),c("time", "S1", "S2", "S3", "E01", "E02", "E03", "Ea1", "Ea2", "Ea3",
                                                    "Eb1", "Eb2", "Eb3", "Eab1", "Eab2", "Eab3", "DoxyPEP", 
-                                                   "Inc", "prevB", "prevA", "prevAB", "prevGC", "ARx"))])/10^6
+                                                   "Inc", "prevB", "prevA", "prevAB", "prev0", "prevGC", "ARx"))])/10^6
   
   list(PrevGC = prev_GC, PrevRes = prev_resistance, PrevGCLoss = prev_GC_loss,
        LossA_5 = LossA_5, LossB_5 = LossB_5, LossAB_5 = LossAB_5,

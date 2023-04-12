@@ -52,7 +52,7 @@ fAB = fA*fB          #relative fitness, dual resistance
 pi_s = 0.90          #Pr of retreatment if initial treatment failure, symptomatic
 Tsr = Ts/3           #time to retreatment for symptomatic infection, if failure
 resA = 0.0001        #initial prev of resistance to A
-resB = 0.268         #initial prev of resistance to doxy
+#resB = 0.268         #initial prev of resistance to doxy
 gamma = 1/(1)        #rate of recovery from exposure
 kappa = 0.25        #proportion of doxyPEP treatments that fail (not due to resistance)
 ```
@@ -175,6 +175,7 @@ doxyPEP.SI <- function(t, x, parms){
     prevA = (sum(Ya) + sum(Za) + sum(Yab) + sum(Zab))/(sum(Y0) + sum(Z0) + sum(Ya) + sum(Za) + sum(Yb)+sum(Zb)+sum(Yab)+sum(Zab))
     prevB = (sum(Yb) + sum(Zb) + sum(Yab) + sum(Zab))/(sum(Y0) + sum(Z0) + sum(Ya) + sum(Za) + sum(Yb)+sum(Zb)+sum(Yab)+sum(Zab))
     prevAB = (sum(Yab) + sum(Zab))/(sum(Y0) + sum(Z0) + sum(Ya) + sum(Za) + sum(Yb)+sum(Zb)+sum(Yab)+sum(Zab))
+    prev0 = (sum(Y0) + sum(Z0))/(sum(Y0) + sum(Z0) + sum(Ya) + sum(Za) + sum(Yb)+sum(Zb)+sum(Yab)+sum(Zab))
     #keep track of inc infections each day
     Inc = sum(beta %*% ((Y0 + Z0) + fA*(Ya+Za) + fB*(Yb+Zb) + fAB*(Yab+Zab))*S)
     prevGC = (sum(Y0) + sum(Z0) + sum(Ya) + sum(Za) + sum(Yb)+sum(Zb)+sum(Yab)+sum(Zab))/10^6
@@ -221,7 +222,8 @@ doxyPEP.SI <- function(t, x, parms){
       omega_a*Tm*Zb -
       g*Zab - rho*Zab
     der <- c(dS, dE0, dY0, dZ0, dEa, dYa, dZa, dEb, dYb, dZb, dEab, dYab, dZab)
-    list(der, Inc = Inc, prevA = prevA, prevB = prevB, prevAB = prevAB, prevGC = prevGC, ARx = ARx)
+    list(der, Inc = Inc, prevA = prevA, prevB = prevB, prevAB = prevAB, prev0 = prev0, 
+         prevGC = prevGC, ARx = ARx)
   })
 }
 ```
@@ -249,25 +251,25 @@ III. Analyze Model Output
 
 ```{r}
  #ensure the total pop size does not change
-doxy_sim0 %>% mutate(RowSum=rowSums(.[setdiff(names(.),c("time", "Inc", "prevB", "prevA", "prevAB", "prevGC", "ARx"))])) %>% 
+doxy_sim0 %>% mutate(RowSum=rowSums(.[setdiff(names(.),c("time", "Inc", "prevB", "prevA", "prevAB", "prev0", "prevGC", "ARx"))])) %>% 
   select(RowSum) %>% summarise(min(RowSum), max(RowSum))
-doxy_sim10 %>% mutate(RowSum=rowSums(.[setdiff(names(.),c("time", "Inc", "prevB", "prevA", "prevAB", "prevGC", "ARx"))])) %>% 
+doxy_sim10 %>% mutate(RowSum=rowSums(.[setdiff(names(.),c("time", "Inc", "prevB", "prevA", "prevAB", "prev0", "prevGC", "ARx"))])) %>% 
   select(RowSum)%>% summarise(min(RowSum), max(RowSum))
-doxy_sim25 %>% mutate(RowSum=rowSums(.[setdiff(names(.),c("time", "Inc", "prevB", "prevA", "prevAB", "prevGC", "ARx"))])) %>% 
+doxy_sim25 %>% mutate(RowSum=rowSums(.[setdiff(names(.),c("time", "Inc", "prevB", "prevA", "prevAB", "prev0", "prevGC", "ARx"))])) %>% 
   select(RowSum)%>% summarise(min(RowSum), max(RowSum))
-doxy_sim50 %>% mutate(RowSum=rowSums(.[setdiff(names(.),c("time", "Inc", "prevB", "prevA", "prevAB", "prevGC", "ARx"))])) %>% 
+doxy_sim50 %>% mutate(RowSum=rowSums(.[setdiff(names(.),c("time", "Inc", "prevB", "prevA", "prevAB", "prev0", "prevGC", "ARx"))])) %>% 
   select(RowSum)%>% summarise(min(RowSum), max(RowSum))
-doxy_sim75 %>% mutate(RowSum=rowSums(.[setdiff(names(.),c("time", "Inc", "prevB", "prevA", "prevAB", "prevGC", "ARx"))])) %>% 
+doxy_sim75 %>% mutate(RowSum=rowSums(.[setdiff(names(.),c("time", "Inc", "prevB", "prevA", "prevAB", "prev0", "prevGC", "ARx"))])) %>% 
   select(RowSum)%>% summarise(min(RowSum), max(RowSum))
 
 ```
 
 ```{r}
-df_list <- list(doxy_sim0 %>% select(-Inc, -prevB, -prevA, -prevAB, -prevGC, -ARx), 
-                doxy_sim10 %>% select(-Inc, -prevB, -prevA, -prevAB, -prevGC, -ARx), 
-                doxy_sim25 %>% select(-Inc, -prevB, -prevA, -prevAB, -prevGC, -ARx), 
-                doxy_sim50 %>% select(-Inc, -prevB, -prevA, -prevAB, -prevGC, -ARx), 
-                doxy_sim75 %>% select(-Inc, -prevB, -prevA, -prevAB, -prevGC, -ARx))
+df_list <- list(doxy_sim0 %>% select(-Inc, -prevB, -prevA, -prevAB, -prev0, -prevGC, -ARx), 
+                doxy_sim10 %>% select(-Inc, -prevB, -prevA, -prevAB, -prev0,-prevGC, -ARx), 
+                doxy_sim25 %>% select(-Inc, -prevB, -prevA, -prevAB, -prev0, -prevGC, -ARx), 
+                doxy_sim50 %>% select(-Inc, -prevB, -prevA, -prevAB, -prev0, -prevGC, -ARx), 
+                doxy_sim75 %>% select(-Inc, -prevB, -prevA, -prevAB, -prev0, -prevGC, -ARx))
 temp <- lapply(X = df_list, SI.clean)
 # names(temp) <- c("doxy_sim_long0", "doxy_sim_long10", "doxy_sim_long25", "doxy_sim_long50", "doxy_sim_long75")
 # list2env(temp, envir = .GlobalEnv)
@@ -340,25 +342,6 @@ resB <- doxy_sim_all %>%
             prevGC = prevGC[time == MinT],
             IR = IR[time==MinT])
 
-#pdf("DOXYPEP_CumInfections.pdf", height = 6, width = 8)
-# ggplot() +
-#   geom_line(data = doxy_sim_all, aes(x = time/365, y = CumInc, col = factor(DoxyPEP)), size = 1) +
-#   geom_point(data = resB, aes(x = MinT/365, y = CumInc, col = factor(DoxyPEP)), size = 3, shape = 19) +
-#   theme_classic() + xlab("Years") + ylab("Cumulative Infection Count") + labs(col = "DoxyPEP Uptake") + theme(text = element_text(size=15)) +
-#   scale_color_manual(values = c("#172869", "#1BB6AF", "#A6E000", "#FC6882", "#C70E7B")) +
-#   scale_y_continuous(breaks = c(0, 1000000, 2000000, 3000000), labels = c("0", "1 M", "2 M", "3 M"))
-#   #scale_color_manual(values = c("#172869", "#1BB6AF", "#A6E000", "#FF5300", "#FC6882"))
-# #dev.off()
-# 
-# #pdf("DOXYPEP_CumInfections5.pdf", height = 3, width = 3)
-# ggplot() +
-#   geom_line(data = doxy_sim_all %>% filter(time <= 1825), aes(x = time/365, y = CumInc, col = factor(DoxyPEP)), size = 1) +
-#   geom_point(data = resB %>% filter(MinT <= 1825), aes(x = MinT/365, y = CumInc, col = factor(DoxyPEP)), size = 3, shape = 19) +
-#   theme_classic() + xlab("Years") + ylab("") + labs(col = "DoxyPEP Uptake") +
-#   scale_color_manual(values = c("#172869", "#1BB6AF", "#A6E000", "#FC6882", "#C70E7B")) +
-#   theme(legend.position = "none") + scale_y_continuous(breaks = c(0, 250000, 500000, 750000), labels = c("0", "0.25 M", "0.5 M", "0.75 M"))
-  #scale_color_manual(values = c("#172869", "#1BB6AF", "#A6E000", "#FF5300", "#FC6882"))
-#dev.off()
 #pdf("DOXYPEP_Prev.pdf", height = 6, width = 8)
 ggplot() +
   geom_line(data = doxy_sim_all, aes(x = time/365, y = prevGC*100, col = factor(DoxyPEP)), size = 1) +

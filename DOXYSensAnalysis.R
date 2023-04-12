@@ -33,8 +33,8 @@ SensAnalyze <- function (fB_range, omega_b_range) {
 }
 
 SensResults <- SensAnalyze(fB_range, omega_b_range)
-#write.csv(SensResults, "SensResults.csv")
-#SensResults <- read.csv("SensResults.csv")
+#write.csv(SensResults, "~/Documents/2021 Grad lab research/DOXYPEP/SensResults.csv")
+#SensResults <- read.csv("~/Documents/2021 Grad lab research/DOXYPEP/SensResults.csv")
 
 #calculate model outcomes
 table_res <- SensResults %>% group_by(DoxyPEP, fB, omega_b) %>%
@@ -50,7 +50,7 @@ table_res <- SensResults %>% group_by(DoxyPEP, fB, omega_b) %>%
 
 resB <- SensResults %>%
   group_by(DoxyPEP, fB, omega_b) %>%
-  summarise(MinT = min(time[prevB >= 0.87]),
+  summarise(MinT = min(time[prevB >= 0.87], na.rm = T),
             CumInc = CumInc[time == MinT],
             Inc = Inc[time == MinT],
             prevGC = prevGC[time == MinT])
@@ -92,10 +92,14 @@ resB <- cumcases %>%
   summarise(MinT = min(time[prevB >= 0.87]),
             PR = PR[time == MinT],
             IRR = IRR[time == MinT],
-            CasesAverted = CasesAverted[time == MinT])
+            CasesAverted = CasesAverted[time == MinT]) 
+
+resB_20 <- cumcases %>%
+  group_by(DoxyPEP, fB, omega_b) %>%
+  summarise(CI20 = CumInc[time == 7300])
 
 #Visualize PR over time relative to baseline (0% DoxyPEP uptake), by properties of Drug B (Doxycycline)
-#pdf("DOXYPEP_SensAnalysisPR.pdf", height = 6, width = 8, encoding = "Greek.enc")
+#pdf("~/Documents/2021 Grad lab research/DOXYPEP/DOXYPEP_SensAnalysisPR.pdf", height = 6, width = 8, encoding = "Greek.enc")
 ggplot() +
   geom_line(data = cumcases, aes(x = time/365, y = PR, col = factor(DoxyPEP)), size = 1) +
   geom_point(data = resB, aes(x = MinT/365, y = PR, col = factor(DoxyPEP)), size = 3, shape = 19) +
@@ -133,8 +137,8 @@ SensAnalyze <- function (kappa) {
 }
 
 SensResults2 <- SensAnalyze(kappa_range)
-#write.csv(SensResults2, "SensResults2.csv")
-#SensResults2 <- read.csv("SensResults2.csv")
+#write.csv(SensResults2, "~/Documents/2021 Grad lab research/DOXYPEP/SensResults2.csv")
+#SensResults2 <- read.csv("~/Documents/2021 Grad lab research/DOXYPEP/SensResults2.csv")
 
 #calculate model outcomes
 table_res2 <- SensResults2 %>% group_by(DoxyPEP, kappa) %>%
@@ -195,7 +199,7 @@ g2 <- ggplot() +
   facet_grid(~paste0("\u03BA  = " , kappa)) + ggtitle("B.")
 
 library(gridExtra)
-#pdf("DOXYPEP_SensAnalysisKAPPA.pdf", height = 6, width = 8, encoding = "Greek.enc")
+#pdf("~/Documents/2021 Grad lab research/DOXYPEP/DOXYPEP_SensAnalysisKAPPA.pdf", height = 6, width = 8, encoding = "Greek.enc")
 grid.arrange(g1, g2, nrow = 2)
 #dev.off()
 
@@ -209,16 +213,17 @@ resB_range <- c(seq(0.2,0.8,0.2))
 
 #run ODE models over all combinations of these params
 SensAnalyze <- function (resB) {
-  df <- data.frame(matrix(ncol = 10, nrow = 0))
+  df <- data.frame(matrix(ncol = 11, nrow = 0))
   #provide column names
-  colnames(df) <- c("time", "DoxyPEP", "Inc", "CumInc", "IR", "prevA", "prevB", "prevAB", "prevGC", "resB")
+  colnames(df) <- c("time", "DoxyPEP", "Inc", "CumInc", "IR", 
+                    "prev0", "prevA", "prevB", "prevAB", "prevGC", "resB")
   for(i in resB)
   {
     resB <- i
     knit("DOXYtransmission.Rmd")
     
     output <- doxy_sim_all %>% 
-      select(time, DoxyPEP, Inc, CumInc,IR, prevA, prevB, prevAB, prevGC) %>%
+      select(time, DoxyPEP, Inc, CumInc,IR, prev0, prevA, prevB, prevAB, prevGC) %>%
       mutate(resB = i)
     df <- rbind(df, output)
   }
@@ -226,8 +231,8 @@ SensAnalyze <- function (resB) {
 }
 
 SensResults3 <- SensAnalyze(resB_range)
-#write.csv(SensResults3, "SensResults3.csv")
-#SensResults3 <- read.csv("SensResults3.csv")
+#write.csv(SensResults3, "~/Documents/2021 Grad lab research/DOXYPEP/SensResults3.csv")
+#SensResults3 <- read.csv("~/Documents/2021 Grad lab research/DOXYPEP/SensResults3.csv")
 
 #calculate model outcomes
 table_res3 <- SensResults3 %>% group_by(DoxyPEP, resB) %>%
@@ -249,7 +254,6 @@ resB3 <- SensResults3 %>%
             prevGC = prevGC[time == MinT])
 
 #Visualize prevalence over time, by doxy resistance at model start
-#pdf("DOXYPEP_KappaAnalysis.pdf", height = 3, width = 9, encoding = "Greek.enc")
 g3 <- ggplot() +
   geom_line(data = SensResults3, aes(x = time/365, y = prevGC*100, col = factor(DoxyPEP)), size = 1) +
   geom_point(data = resB3, aes(x = MinT/365, y = prevGC*100, col = factor(DoxyPEP)), size = 3, shape = 19) +
@@ -258,7 +262,6 @@ g3 <- ggplot() +
   scale_color_manual(values = c("#172869", "#1BB6AF", "#A6E000", "#FC6882", "#C70E7B")) +
   #scale_y_continuous(breaks = c(0, 1000000, 2000000, 3000000), labels = c("0", "1 M", "2 M", "3 M")) +
   facet_grid(~paste0("PrevB = " , resB)) + ggtitle("A.")
-#dev.off()
 
 baseline3 <- SensResults3 %>%
   filter(DoxyPEP == "0%") %>%
@@ -290,7 +293,25 @@ g4 <- ggplot() +
   facet_grid(~paste0("PrevB = " , resB)) + ggtitle("B.")
 
 library(gridExtra)
-#pdf("DOXYPEP_SensAnalysisRESB.pdf", height = 6, width = 8)
+#pdf("~/Documents/2021 Grad lab research/DOXYPEP/DOXYPEP_SensAnalysisRESB.pdf", height = 6, width = 8)
 grid.arrange(g3, g4, nrow = 2)
 #dev.off()
+
+##add resistance profiles over time plot
+infectiondat <- SensResults3 %>%
+  select(resB, DoxyPEP, time, Neither = prev0, prevA, prevB, Dual = prevAB) %>%
+  mutate(Ceftriaxone = prevA-Dual,
+         Doxy = prevB-Dual,
+         totalprev = Neither + Ceftriaxone + Doxy + Dual) %>%
+  select(-prevA, -prevB, -totalprev) %>%
+  gather(., ResistState, percent, 4:7) %>%
+  filter(resB == 0.80)
+
+ggplot(infectiondat,aes(x=time/365, y=percent*100, fill = factor(ResistState, levels = c("Neither", "Doxy", "Ceftriaxone", "Dual")))) +
+  geom_area() + scale_fill_manual(values = c("turquoise3", "#E9A17C", "mediumpurple", "deeppink2")) +
+  theme_classic() + facet_wrap(~DoxyPEP) +
+  xlab("Years") + ylab("% of Gonococcal Infections") + labs(fill = "Resistance Profile") +
+  theme(legend.position = c(0.87,0.2)) +
+  geom_hline(yintercept = 5, col = "white", linetype = "dashed") + geom_hline(yintercept = 87, col = "white", linetype = "dotted")
+
 
