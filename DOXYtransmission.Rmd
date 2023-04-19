@@ -52,7 +52,7 @@ fAB = fA*fB          #relative fitness, dual resistance
 pi_s = 0.90          #Pr of retreatment if initial treatment failure, symptomatic
 Tsr = Ts/3           #time to retreatment for symptomatic infection, if failure
 resA = 0.0001        #initial prev of resistance to A
-#resB = 0.268         #initial prev of resistance to doxy
+resB = 0.268         #initial prev of resistance to doxy
 gamma = 1/(1)        #rate of recovery from exposure
 kappa = 0.25        #proportion of doxyPEP treatments that fail (not due to resistance)
 ```
@@ -83,21 +83,21 @@ Z_gc_md <- gc_md*(1-prev_symp)
 Y_gc_hi <- gc_hi*prev_symp
 Z_gc_hi <- gc_hi*(1-prev_symp)
 
-Y0 <- c(Y_gc_lo, Y_gc_md, Y_gc_hi) * (1-(resA + resB + resA*resB))
-Z0 <- c(Z_gc_lo, Z_gc_md, Z_gc_hi) * (1-(resA + resB + resA*resB))
+Y0 <- c(Y_gc_lo, Y_gc_md, Y_gc_hi) * (1-(resA + resB - resA*resB))
+Z0 <- c(Z_gc_lo, Z_gc_md, Z_gc_hi) * (1-(resA + resB - resA*resB))
 
-YA <- c(Y_gc_lo, Y_gc_md, Y_gc_hi) * resA
-ZA <- c(Z_gc_lo, Z_gc_md, Z_gc_hi) * resA
+YA <- c(Y_gc_lo, Y_gc_md, Y_gc_hi) * resA * (1-resB)
+ZA <- c(Z_gc_lo, Z_gc_md, Z_gc_hi) * resA * (1-resB)
 
-YB <- c(Y_gc_lo, Y_gc_md, Y_gc_hi) * resB
-ZB <- c(Z_gc_lo, Z_gc_md, Z_gc_hi) * resB
+YB <- c(Y_gc_lo, Y_gc_md, Y_gc_hi) * resB * (1-resA)
+ZB <- c(Z_gc_lo, Z_gc_md, Z_gc_hi) * resB * (1-resA)
 
 YAB <- c(Y_gc_lo, Y_gc_md, Y_gc_hi) * (resA*resB)
 ZAB <- c(Z_gc_lo, Z_gc_md, Z_gc_hi) * (resA*resB)
 
-E0 <- c(gc_lo, gc_md, gc_hi) * 0.016 * (1-(resA + resB + resA*resB))
-Ea <- c(gc_lo, gc_md, gc_hi) * 0.016 * resA
-Eb <- c(gc_lo, gc_md, gc_hi) * 0.016 * resB
+E0 <- c(gc_lo, gc_md, gc_hi) * 0.016 * (1-(resA + resB - resA*resB))
+Ea <- c(gc_lo, gc_md, gc_hi) * 0.016 * resA * (1-resB)
+Eb <- c(gc_lo, gc_md, gc_hi) * 0.016 * resB * (1-resA)
 Eab <- c(gc_lo, gc_md, gc_hi) * 0.016 * resA*resB
 
 
@@ -342,21 +342,25 @@ resB <- doxy_sim_all %>%
             prevGC = prevGC[time == MinT],
             IR = IR[time==MinT])
 
-#pdf("DOXYPEP_Prev.pdf", height = 6, width = 8)
-ggplot() +
+#pdf("~/Documents/2021 Grad lab research/DOXYPEP/DOXYPEP_Prev.pdf", height = 6, width = 8)
+prev <- ggplot() +
   geom_line(data = doxy_sim_all, aes(x = time/365, y = prevGC*100, col = factor(DoxyPEP)), size = 1) +
   geom_point(data = resB, aes(x = MinT/365, y = prevGC*100, col = factor(DoxyPEP)), size = 3, shape = 19) +
   theme_classic() + xlab("Years") + ylab("Gonococcal Infection Prevalence (%)") + labs(col = "DoxyPEP Uptake") + theme(text = element_text(size=15), legend.position = c(0.85, 0.25)) +
   scale_color_manual(values = c("#172869", "#1BB6AF", "#A6E000", "#FC6882", "#C70E7B"))
+prev
 #dev.off()
+#ggsave(file = "~/Documents/2021 Grad lab research/DOXYPEP/DOXYPEP_Prev.svg", plot = prev, width = 8, height = 6)
 
-#pdf("DOXYPEP_Inc.pdf", height = 6, width = 8)
-ggplot() +
+#pdf("~/Documents/2021 Grad lab research/DOXYPEP/DOXYPEP_Inc.pdf", height = 6, width = 8)
+inc <- ggplot() +
   geom_line(data = doxy_sim_all, aes(x = time/365, y = IR*365*100, col = factor(DoxyPEP)), size = 1) +
   geom_point(data = resB, aes(x = MinT/365, y = IR*365*100, col = factor(DoxyPEP)), size = 3, shape = 19) +
   theme_classic() + xlab("Years") + ylab("Incidence Rate (Cases/100 PY)") + labs(col = "DoxyPEP Uptake") + theme(text = element_text(size=15), legend.position = c(0.85, 0.25)) +
   scale_color_manual(values = c("#172869", "#1BB6AF", "#A6E000", "#FC6882", "#C70E7B"))
+inc
 #dev.off()
+#ggsave(file = "~/Documents/2021 Grad lab research/DOXYPEP/DOXYPEP_Inc.svg", plot = inc, width = 8, height = 6)
 ```
 
 ```{r}
@@ -386,21 +390,25 @@ cumcases %>%
 
 ```{r}
 #Visualize PR and IRR relative to baseline (0% DoxyPEP uptake)
-#pdf("DOXYPEP_PR.pdf", height = 3, width = 3)
-ggplot() +
+#pdf("~/Documents/2021 Grad lab research/DOXYPEP/DOXYPEP_PR.pdf", height = 3, width = 3)
+PR <- ggplot() +
   geom_line(data = cumcases, aes(x = time/365, y = PR, col = factor(DoxyPEP)), size = 1) +
   geom_point(data = resB, aes(x = MinT/365, y = PR, col = factor(DoxyPEP)), size = 3, shape = 19) +
   theme_classic() + xlab("Years") + ylab("Prevalence Ratio") + labs(col = "DoxyPEP Uptake") + theme(text = element_text(size=15), legend.position = "none") +
   scale_color_manual(values = c("#172869", "#1BB6AF", "#A6E000", "#FC6882", "#C70E7B"))
+PR
 #dev.off()
+#ggsave(file = "~/Documents/2021 Grad lab research/DOXYPEP/DOXYPEP_PR.svg", plot = PR, width = 3, height = 3)
 
-#pdf("DOXYPEP_IRR.pdf", height = 3, width = 3)
-ggplot() +
+#pdf("~/Documents/2021 Grad lab research/DOXYPEP/DOXYPEP_IRR.pdf", height = 3, width = 3)
+IRR <- ggplot() +
   geom_line(data = cumcases, aes(x = time/365, y = IRR, col = factor(DoxyPEP)), size = 1) +
   geom_point(data = resB, aes(x = MinT/365, y = IRR, col = factor(DoxyPEP)), size = 3, shape = 19) +
   theme_classic() + xlab("Years") + ylab("Incidence Rate Ratio") + labs(col = "DoxyPEP Uptake") + theme(text = element_text(size=15), legend.position = "none") +
   scale_color_manual(values = c("#172869", "#1BB6AF", "#A6E000", "#FC6882", "#C70E7B"))
+IRR
 #dev.off()
+#ggsave(file = "~/Documents/2021 Grad lab research/DOXYPEP/DOXYPEP_IRR.svg", plot = IRR, width = 3, height = 3)
 ```
 
 
@@ -416,13 +424,14 @@ infectiondat <- doxy_sim_long_all %>%
                                       ifelse(ResistState == "A only", "Ceftriaxone only",
                                              ifelse(ResistState == "A and B", "Ceftriaxone and\nDoxycycline", NA)))))
 
-#pdf("ResistProfile.pdf", width = 6, height = 5)
+#pdf("~/Documents/2021 Grad lab research/DOXYPEP/ResistProfile.pdf", width = 6, height = 5)
 #plot prevalence of gonorrhea over time, by Resistance Profile
 ggplot(infectiondat,aes(x=time/365, y=percent*100, fill = factor(ResistLabels, levels = c("Neither", "Doxycycline only", "Ceftriaxone only", "Ceftriaxone and\nDoxycycline")))) +
   geom_area() + scale_fill_manual(values = c("turquoise3", "#E9A17C", "mediumpurple", "deeppink2")) +
   theme_classic() + facet_wrap(~DoxyPEP) +
-  xlab("Years") + ylab("% of Gonococcal Infections") + labs(fill = "Resistance Profile") +
-  theme(legend.position = c(0.87,0.2)) +
+  xlab("Years") + ylab("% of Gonococcal Infections") + 
+  labs(fill = "Resistance Profile", subtitle = "DoxyPEP Uptake Level") +
+  theme(legend.position = c(0.87,0.2), plot.subtitle = element_text(hjust = 0.5)) +
   geom_hline(yintercept = 5, col = "white", linetype = "dashed") + geom_hline(yintercept = 87, col = "white", linetype = "dotted")
 #dev.off()
 ```

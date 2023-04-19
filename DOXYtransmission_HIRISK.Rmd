@@ -84,23 +84,22 @@ Z_gc_md <- gc_md*(1-prev_symp)
 Y_gc_hi <- gc_hi*prev_symp
 Z_gc_hi <- gc_hi*(1-prev_symp)
 
-Y0 <- c(Y_gc_lo, Y_gc_md, Y_gc_hi) * (1-(resA + resB + resA*resB))
-Z0 <- c(Z_gc_lo, Z_gc_md, Z_gc_hi) * (1-(resA + resB + resA*resB))
+Y0 <- c(Y_gc_lo, Y_gc_md, Y_gc_hi) * (1-(resA + resB - resA*resB))
+Z0 <- c(Z_gc_lo, Z_gc_md, Z_gc_hi) * (1-(resA + resB - resA*resB))
 
-YA <- c(Y_gc_lo, Y_gc_md, Y_gc_hi) * resA
-ZA <- c(Z_gc_lo, Z_gc_md, Z_gc_hi) * resA
+YA <- c(Y_gc_lo, Y_gc_md, Y_gc_hi) * resA * (1-resB)
+ZA <- c(Z_gc_lo, Z_gc_md, Z_gc_hi) * resA * (1-resB)
 
-YB <- c(Y_gc_lo, Y_gc_md, Y_gc_hi) * resB
-ZB <- c(Z_gc_lo, Z_gc_md, Z_gc_hi) * resB
+YB <- c(Y_gc_lo, Y_gc_md, Y_gc_hi) * resB * (1-resA)
+ZB <- c(Z_gc_lo, Z_gc_md, Z_gc_hi) * resB * (1-resA)
 
 YAB <- c(Y_gc_lo, Y_gc_md, Y_gc_hi) * (resA*resB)
 ZAB <- c(Z_gc_lo, Z_gc_md, Z_gc_hi) * (resA*resB)
 
-E0 <- c(gc_lo, gc_md, gc_hi) * 0.016 * (1-(resA + resB + resA*resB))
-Ea <- c(gc_lo, gc_md, gc_hi) * 0.016 * resA
-Eb <- c(gc_lo, gc_md, gc_hi) * 0.016 * resB
+E0 <- c(gc_lo, gc_md, gc_hi) * 0.016 * (1-(resA + resB - resA*resB))
+Ea <- c(gc_lo, gc_md, gc_hi) * 0.016 * resA * (1-resB)
+Eb <- c(gc_lo, gc_md, gc_hi) * 0.016 * resB * (1-resA)
 Eab <- c(gc_lo, gc_md, gc_hi) * 0.016 * resA*resB
-
 
 #start with overall prevalence of 3% of gonorrhea
 inits <- c(S1 = N1-1.016*gc_lo, S2 = N2-1.016*gc_md, S3 = N3-1.016*gc_hi,
@@ -350,35 +349,17 @@ resB <- doxy_sim_all %>%
             prevGC = prevGC[time == MinT],
             IR = IR[time==MinT])
 
-#pdf("DOXYPEP_CumInfections.pdf", height = 6, width = 8)
-# ggplot() +
-#   geom_line(data = doxy_sim_all, aes(x = time/365, y = CumInc, col = factor(DoxyPEP)), size = 1) +
-#   geom_point(data = resB, aes(x = MinT/365, y = CumInc, col = factor(DoxyPEP)), size = 3, shape = 19) +
-#   theme_classic() + xlab("Years") + ylab("Cumulative Infection Count") + labs(col = "DoxyPEP Uptake") + theme(text = element_text(size=15)) +
-#   scale_color_manual(values = c("#172869", "#1BB6AF", "#A6E000", "#FC6882", "#C70E7B")) +
-#   scale_y_continuous(breaks = c(0, 1000000, 2000000, 3000000), labels = c("0", "1 M", "2 M", "3 M"))
-#   #scale_color_manual(values = c("#172869", "#1BB6AF", "#A6E000", "#FF5300", "#FC6882"))
-# #dev.off()
-# 
-# #pdf("DOXYPEP_CumInfections5.pdf", height = 3, width = 3)
-# ggplot() +
-#   geom_line(data = doxy_sim_all %>% filter(time <= 1825), aes(x = time/365, y = CumInc, col = factor(DoxyPEP)), size = 1) +
-#   geom_point(data = resB %>% filter(MinT <= 1825), aes(x = MinT/365, y = CumInc, col = factor(DoxyPEP)), size = 3, shape = 19) +
-#   theme_classic() + xlab("Years") + ylab("") + labs(col = "DoxyPEP Uptake") +
-#   scale_color_manual(values = c("#172869", "#1BB6AF", "#A6E000", "#FC6882", "#C70E7B")) +
-#   theme(legend.position = "none") + scale_y_continuous(breaks = c(0, 250000, 500000, 750000), labels = c("0", "0.25 M", "0.5 M", "0.75 M"))
-  #scale_color_manual(values = c("#172869", "#1BB6AF", "#A6E000", "#FF5300", "#FC6882"))
-#dev.off()
-
-#pdf("DOXYPEP_PrevHI.pdf", height = 6, width = 8)
-ggplot() +
+#pdf("~/Documents/2021 Grad lab research/DOXYPEP/DOXYPEP_PrevHI.pdf", height = 6, width = 8)
+prevHI <- ggplot() +
   geom_line(data = doxy_sim_all, aes(x = time/365, y = prevGC*100, col = factor(DoxyPEP)), size = 1) +
   geom_point(data = resB, aes(x = MinT/365, y = prevGC*100, col = factor(DoxyPEP)), size = 3, shape = 19) +
   theme_classic() + xlab("Years") + ylab("Gonococcal Infection Prevalence (%)") + labs(col = "DoxyPEP Uptake in High\nActivity Group Only") + theme(text = element_text(size=15), legend.position = c(0.80, 0.25)) +
   scale_color_manual(values = c("#172869", "#1BB6AF", "#A6E000", "#FC6882", "#C70E7B"))
+prevHI
 #dev.off()
+#ggsave(file = "~/Documents/2021 Grad lab research/DOXYPEP/DOXYPEP_PrevHI.svg", plot = prevHI, height = 6, width = 8)
 
-# pdf("DOXYPEP_Inc.pdf", height = 6, width = 8)
+# pdf("~/Documents/2021 Grad lab research/DOXYPEP/DOXYPEP_IncHI.pdf", height = 6, width = 8)
 # ggplot() +
 #   geom_line(data = doxy_sim_all, aes(x = time/365, y = IR*365*100, col = factor(DoxyPEP)), size = 1) +
 #   geom_point(data = resB, aes(x = MinT/365, y = IR*365*100, col = factor(DoxyPEP)), size = 3, shape = 19) +
@@ -427,15 +408,17 @@ cumcases %>%
 
 ```{r}
 #Visualize PR and IRR relative to baseline (0% DoxyPEP uptake)
-#pdf("DOXYPEP_PRHI.pdf", height = 3, width = 3)
-ggplot() +
+#pdf("~/Documents/2021 Grad lab research/DOXYPEP/DOXYPEP_PRHI.pdf", height = 3, width = 3)
+PRHI <- ggplot() +
   geom_line(data = cumcases, aes(x = time/365, y = PR, col = factor(DoxyPEP)), size = 1) +
   geom_point(data = resB, aes(x = MinT/365, y = PR, col = factor(DoxyPEP)), size = 3, shape = 19) +
   theme_classic() + xlab("Years") + ylab("Prevalence Ratio") + labs(col = "DoxyPEP Uptake") + theme(text = element_text(size=15), legend.position = "none") +
   scale_color_manual(values = c("#172869", "#1BB6AF", "#A6E000", "#FC6882", "#C70E7B"))
+PRHI
 #dev.off()
+#ggsave(file = "~/Documents/2021 Grad lab research/DOXYPEP/DOXYPEP_PRHI.svg", plot = PRHI, height = 3, width = 3)
 
-# #pdf("DOXYPEP_IRR.pdf", height = 3, width = 3)
+# #pdf("~/Documents/2021 Grad lab research/DOXYPEP/DOXYPEP_IRRHI.pdf", height = 3, width = 3)
 # ggplot() +
 #   geom_line(data = cumcases, aes(x = time/365, y = IRR, col = factor(DoxyPEP)), size = 1) +
 #   geom_point(data = resB, aes(x = MinT/365, y = IRR, col = factor(DoxyPEP)), size = 3, shape = 19) +
@@ -457,7 +440,7 @@ infectiondat <- doxy_sim_long_all %>%
                                       ifelse(ResistState == "A only", "Ceftriaxone only",
                                              ifelse(ResistState == "A and B", "Ceftriaxone and\nDoxycycline", NA)))))
 
-#pdf("ResistProfile.pdf", width = 6, height = 5)
+#pdf("~/Documents/2021 Grad lab research/DOXYPEP/ResistProfileHI.pdf", width = 6, height = 5)
 #plot prevalence of gonorrhea over time, by Resistance Profile
 ggplot(infectiondat,aes(x=time/365, y=percent*100, fill = factor(ResistLabels, levels = c("Neither", "Doxycycline only", "Ceftriaxone only", "Ceftriaxone and\nDoxycycline")))) +
   geom_area() + scale_fill_manual(values = c("turquoise3", "#E9A17C", "mediumpurple", "deeppink2")) +

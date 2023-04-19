@@ -3,6 +3,11 @@
 # E Reichert, 03.2023
 
 library(knitr)
+library(tidyr)
+library(ggplot2)
+library(readr)
+library(dplyr)
+
 
 ##I. PROPERTIES OF DRUG B
 #Set parameter values for fB and omegaB that we will explore
@@ -63,7 +68,7 @@ resB$omega_b <- as.character(resB$omega_b)
 resB$omega_b[resB$omega_b == "1e-04"] <- "1e-4"
 
 #Visualize prevalence of GC over time, by properties of Drug B (doxycycline)
-#pdf("DOXYPEP_SensAnalysisPrev.pdf", height = 6, width = 8, encoding = "Greek.enc")
+#pdf("~/Documents/2021 Grad lab research/DOXYPEP/DOXYPEP_SensAnalysisPrev.pdf", height = 6, width = 8, encoding = "Greek.enc")
 ggplot() +
   geom_line(data = SensResults, aes(x = time/365, y = prevGC*100, col = factor(DoxyPEP)), size = 1) +
   geom_point(data = resB, aes(x = MinT/365, y = prevGC*100, col = factor(DoxyPEP)), size = 3, shape = 19) +
@@ -163,7 +168,7 @@ resB2 <- SensResults2 %>%
 g1 <- ggplot() +
   geom_line(data = SensResults2, aes(x = time/365, y = prevGC*100, col = factor(DoxyPEP)), size = 1) +
   geom_point(data = resB2, aes(x = MinT/365, y = prevGC*100, col = factor(DoxyPEP)), size = 3, shape = 19) +
-  theme_classic() + xlab("Years") + ylab("Prevalence (%)") + 
+  theme_classic() + xlab("Years") + ylab("Gonococcal Infection\nPrevalence (%)") + 
   labs(col = "DoxyPEP Uptake") + theme(text = element_text(size=12), legend.text = element_text(size=12), axis.text = element_text(size=12)) +
   scale_color_manual(values = c("#172869", "#1BB6AF", "#A6E000", "#FC6882", "#C70E7B")) +
   #scale_y_continuous(breaks = c(0, 1000000, 2000000, 3000000), labels = c("0", "1 M", "2 M", "3 M")) +
@@ -192,7 +197,7 @@ resB2 <- cumcases2 %>%
 g2 <- ggplot() +
   geom_line(data = cumcases2, aes(x = time/365, y = PR, col = factor(DoxyPEP)), size = 1) +
   geom_point(data = resB2, aes(x = MinT/365, y = PR, col = factor(DoxyPEP)), size = 3, shape = 19) +
-  theme_classic() + xlab("Years") + ylab("Prevalence Ratio") + labs(col = "DoxyPEP Uptake") + 
+  theme_classic() + xlab("Years") + ylab("Prevalence Ratio\n   ") + labs(col = "DoxyPEP Uptake") + 
   theme(text = element_text(size=12), legend.text = element_text(size=12), axis.text = element_text(size=12)) +
   scale_color_manual(values = c("#172869", "#1BB6AF", "#A6E000", "#FC6882", "#C70E7B")) +
   #scale_y_continuous(breaks = c(0, 250000, 500000, 750000), labels = c("0", "0.25 M", "0.5 M", "0.75 M")) +
@@ -246,8 +251,13 @@ table_res3 <- SensResults3 %>% group_by(DoxyPEP, resB) %>%
             Inc20 = CumInc[time==7300],
             Inc500 = round(min(time[CumInc >= 500000])/365,3))
 
+SensResults3 <- SensResults3 %>%
+  mutate(resB_cat = ifelse(resB == 0.20, "20%",
+                           ifelse(resB == 0.40, "40%", 
+                                  ifelse(resB == 0.60, "60%", "80%"))))
+
 resB3 <- SensResults3 %>%
-  group_by(DoxyPEP, resB) %>%
+  group_by(DoxyPEP, resB, resB_cat) %>%
   summarise(MinT = min(time[prevB >= 0.87]),
             CumInc = CumInc[time == MinT],
             Inc = Inc[time == MinT],
@@ -257,15 +267,17 @@ resB3 <- SensResults3 %>%
 g3 <- ggplot() +
   geom_line(data = SensResults3, aes(x = time/365, y = prevGC*100, col = factor(DoxyPEP)), size = 1) +
   geom_point(data = resB3, aes(x = MinT/365, y = prevGC*100, col = factor(DoxyPEP)), size = 3, shape = 19) +
-  theme_classic() + xlab("Years") + ylab("Prevalence (%)") + 
-  labs(col = "DoxyPEP Uptake") + theme(text = element_text(size=12), legend.text = element_text(size=12), axis.text = element_text(size=12)) +
+  theme_classic() + xlab("Years") + ylab("Gonococcal Infection\nPrevalence (%)") + 
+  labs(col = "DoxyPEP Uptake", title = "A.", subtitle = "Initial Prevalence of Doxycycline Resistance") + 
+  theme(text = element_text(size=12), legend.text = element_text(size=12), axis.text = element_text(size=12), 
+        plot.subtitle = element_text(hjust = 0.5)) +
   scale_color_manual(values = c("#172869", "#1BB6AF", "#A6E000", "#FC6882", "#C70E7B")) +
   #scale_y_continuous(breaks = c(0, 1000000, 2000000, 3000000), labels = c("0", "1 M", "2 M", "3 M")) +
-  facet_grid(~paste0("PrevB = " , resB)) + ggtitle("A.")
+  facet_grid(~paste0(resB_cat))
 
 baseline3 <- SensResults3 %>%
   filter(DoxyPEP == "0%") %>%
-  select(time, resB, 
+  select(time, resB, resB_cat,
          IR_compare = IR,
          prev_compare = prevGC,
          CumInc_compare = CumInc)
@@ -276,7 +288,7 @@ cumcases3 <- left_join(SensResults3, baseline3) %>%
          CasesAverted = CumInc_compare - CumInc)
 
 resB3 <- cumcases3 %>%
-  group_by(DoxyPEP, resB) %>%
+  group_by(DoxyPEP, resB, resB_cat) %>%
   summarise(MinT = min(time[prevB >= 0.87]),
             PR = PR[time == MinT],
             IRR = IRR[time == MinT],
@@ -286,32 +298,33 @@ resB3 <- cumcases3 %>%
 g4 <- ggplot() +
   geom_line(data = cumcases3, aes(x = time/365, y = PR, col = factor(DoxyPEP)), size = 1) +
   geom_point(data = resB3, aes(x = MinT/365, y = PR, col = factor(DoxyPEP)), size = 3, shape = 19) +
-  theme_classic() + xlab("Years") + ylab("Prevalence Ratio") + labs(col = "DoxyPEP Uptake") + 
-  theme(text = element_text(size=12), legend.text = element_text(size=12), axis.text = element_text(size=12)) +
+  theme_classic() + xlab("Years") + ylab("Prevalence Ratio\n   ") + 
+  labs(col = "DoxyPEP Uptake", title = "B.", subtitle = "Initial Prevalence of Doxycycline Resistance") + 
+  theme(text = element_text(size=12), legend.text = element_text(size=12), axis.text = element_text(size=12),
+        plot.subtitle = element_text(hjust = 0.5)) +
   scale_color_manual(values = c("#172869", "#1BB6AF", "#A6E000", "#FC6882", "#C70E7B")) +
   #scale_y_continuous(breaks = c(0, 250000, 500000, 750000), labels = c("0", "0.25 M", "0.5 M", "0.75 M")) +
-  facet_grid(~paste0("PrevB = " , resB)) + ggtitle("B.")
+  facet_grid(~paste0(resB_cat)) 
 
 library(gridExtra)
-#pdf("~/Documents/2021 Grad lab research/DOXYPEP/DOXYPEP_SensAnalysisRESB.pdf", height = 6, width = 8)
+pdf("~/Documents/2021 Grad lab research/DOXYPEP/DOXYPEP_SensAnalysisRESB.pdf", height = 7, width = 9)
 grid.arrange(g3, g4, nrow = 2)
-#dev.off()
+dev.off()
 
-##add resistance profiles over time plot
-infectiondat <- SensResults3 %>%
-  select(resB, DoxyPEP, time, Neither = prev0, prevA, prevB, Dual = prevAB) %>%
-  mutate(Ceftriaxone = prevA-Dual,
-         Doxy = prevB-Dual,
-         totalprev = Neither + Ceftriaxone + Doxy + Dual) %>%
-  select(-prevA, -prevB, -totalprev) %>%
-  gather(., ResistState, percent, 4:7) %>%
-  filter(resB == 0.80)
-
-ggplot(infectiondat,aes(x=time/365, y=percent*100, fill = factor(ResistState, levels = c("Neither", "Doxy", "Ceftriaxone", "Dual")))) +
-  geom_area() + scale_fill_manual(values = c("turquoise3", "#E9A17C", "mediumpurple", "deeppink2")) +
-  theme_classic() + facet_wrap(~DoxyPEP) +
-  xlab("Years") + ylab("% of Gonococcal Infections") + labs(fill = "Resistance Profile") +
-  theme(legend.position = c(0.87,0.2)) +
-  geom_hline(yintercept = 5, col = "white", linetype = "dashed") + geom_hline(yintercept = 87, col = "white", linetype = "dotted")
-
+# ##add resistance profiles over time plot
+# infectiondat <- SensResults3 %>%
+#   select(resB, DoxyPEP, time, Neither = prev0, prevA, prevB, Dual = prevAB) %>%
+#   mutate(Ceftriaxone = prevA-Dual,
+#          Doxy = prevB-Dual,
+#          totalprev = Neither + Ceftriaxone + Doxy + Dual) %>%
+#   select(-prevA, -prevB, -totalprev) %>%
+#   gather(., ResistState, percent, 4:7)
+# 
+# ggplot(infectiondat,aes(x=time/365, y=percent*100, fill = factor(ResistState, levels = c("Neither", "Doxy", "Ceftriaxone", "Dual")))) +
+#   geom_area() + scale_fill_manual(values = c("turquoise3", "#E9A17C", "mediumpurple", "deeppink2")) +
+#   theme_classic() + facet_grid(resB~DoxyPEP) +
+#   xlab("Years") + ylab("% of Gonococcal Infections") + labs(fill = "Resistance Profile") +
+#   theme(legend.position = c(0.87,0.2)) +
+#   geom_hline(yintercept = 5, col = "white", linetype = "dashed") + geom_hline(yintercept = 87, col = "white", linetype = "dotted") +
+#   geom_vline(xintercept = 10, col = 'white')
 
