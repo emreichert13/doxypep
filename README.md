@@ -1,6 +1,4 @@
-# doxypep
-
-## Code associated with "Resistance and prevalence implications of doxycycline post-exposure prophylaxis for gonorrhea prevention in men who have sex with men: a modeling study"
+# Code associated with "Resistance and prevalence implications of doxycycline post-exposure prophylaxis for gonorrhea prevention in men who have sex with men: a modeling study"
 
 Authors: Reichert E, Grad YH
 
