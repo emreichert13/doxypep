@@ -3,10 +3,11 @@ title: "R Notebook"
 output: html_notebook
 ---
 
-E Reichert 10.2023
+Doxy-PEP Model
+E Reichert, 10.2023
 
-Doxy-PEP Model Impact
-with doxy-PEP only targeted to high sexual activity group (fixed 10% of population)
+Explore impact of doxy-PEP if entire US MSM-like population we model is eligible
+(No restriction by sexual activity group)
 
 ```{r}
 #load necessary packages
@@ -28,7 +29,6 @@ source(paste0(filepath, "DoxyPEPcode/DOXYfunctions.R"))
 ```
 
 I. Set parameters and initial conditions.
-
 ```{r}
 # Set parameters that will stay constant throughout model
 pop = 10^6                    #pop size
@@ -105,6 +105,7 @@ Ea <- c(gc_lo, gc_md, gc_hi) * 0.016 * resA * (1-resB)
 Eb <- c(gc_lo, gc_md, gc_hi) * 0.016 * resB * (1-resA)
 Eab <- c(gc_lo, gc_md, gc_hi) * 0.016 * resA*resB
 
+
 #start with overall prevalence of 3% of gonorrhea
 inits <- c(S1 = N1-1.016*gc_lo, S2 = N2-1.016*gc_md, S3 = N3-1.016*gc_hi,
            E01 = E0[1], E02 = E0[2], E03 = E0[3], 
@@ -179,11 +180,11 @@ doxyPEP.SI <- function(t, x, parms){
     prevA = (sum(Ya) + sum(Za) + sum(Yab) + sum(Zab))/(sum(Y0) + sum(Z0) + sum(Ya) + sum(Za) + sum(Yb)+sum(Zb)+sum(Yab)+sum(Zab))
     prevB = (sum(Yb) + sum(Zb) + sum(Yab) + sum(Zab))/(sum(Y0) + sum(Z0) + sum(Ya) + sum(Za) + sum(Yb)+sum(Zb)+sum(Yab)+sum(Zab))
     prevAB = (sum(Yab) + sum(Zab))/(sum(Y0) + sum(Z0) + sum(Ya) + sum(Za) + sum(Yb)+sum(Zb)+sum(Yab)+sum(Zab))
+    prev0 = (sum(Y0) + sum(Z0))/(sum(Y0) + sum(Z0) + sum(Ya) + sum(Za) + sum(Yb)+sum(Zb)+sum(Yab)+sum(Zab))
     #keep track of inc infections each day
     Inc = sum(beta %*% ((Y0 + Z0) + fA*(Ya+Za) + fB*(Yb+Zb) + fAB*(Yab+Zab))*S)
     prevGC = (sum(Y0) + sum(Z0) + sum(Ya) + sum(Za) + sum(Yb)+sum(Zb)+sum(Yab)+sum(Zab))/10^6
     ARx = sum(Ts*Y0 + Tm*Z0 + pi_s*Tsr*Ya + Ts*Yb + Tm*Zb + pi_s*Tsr*Yab)
-    Doxy = prB*(1-kappa)*(1-omega_b)*(gamma*E0 + gamma*Ea)
     
     #susceptibles
     dS <- -beta %*% ((Y0 + Z0) + fA*(Ya+Za) + fB*(Yb+Zb) + fAB*(Yab+Zab))*S +
@@ -226,7 +227,8 @@ doxyPEP.SI <- function(t, x, parms){
       omega_a*Tm*Zb -
       g*Zab - rho*Zab
     der <- c(dS, dE0, dY0, dZ0, dEa, dYa, dZa, dEb, dYb, dZb, dEab, dYab, dZab)
-    list(der, Inc = Inc, prevA = prevA, prevB = prevB, prevAB = prevAB, prevGC = prevGC, ARx = ARx, Doxy = Doxy)
+    list(der, Inc = Inc, prevA = prevA, prevB = prevB, prevAB = prevAB, prev0 = prev0, 
+         prevGC = prevGC, ARx = ARx)
   })
 }
 ```
@@ -235,12 +237,12 @@ doxyPEP.SI <- function(t, x, parms){
 #run ODE models over all combinations of these params
 RunODE <- function (x) {
   #provide column names
-      parms$prB <- c(0,0,x) #probability of DoxyPEP set to 0 in sexual activity groups 1-2 (low-intermediate)
+      parms$prB <- x
       doxy_sim <- as.data.frame(ode(inits, dt, doxyPEP.SI, parms=parms))   
   return(doxy_sim)
 }
 
-temp <- lapply(X = c(0,0.1,0.25,0.5,0.75,0.90), RunODE)
+temp <- lapply(X = c(0,0.1,0.25,0.5,0.75), RunODE)
 # names(temp) <- c("doxy_sim0", "doxy_sim10", "doxy_sim25", "doxy_sim50", "doxy_sim75")
 # list2env(temp, envir = .GlobalEnv)
 doxy_sim0 <- temp[[1]]
@@ -248,50 +250,41 @@ doxy_sim10 <- temp[[2]]
 doxy_sim25 <- temp[[3]]
 doxy_sim50 <- temp[[4]]
 doxy_sim75 <- temp[[5]]
-doxy_sim90 <- temp[[6]]
 ```
 
 III. Analyze Model Output
 
 ```{r}
  #ensure the total pop size does not change
-# and that only high risk group is receiving DoxyPEP
-doxy_sim0 %>% mutate(RowSum=rowSums(.[setdiff(names(.),c("time", "Inc", "prevB", "prevA", "prevAB", "prevGC", "ARx", "Doxy1", "Doxy2", "Doxy3"))])) %>% 
-  select(RowSum, Doxy1, Doxy2) %>% summarise(min(RowSum), max(RowSum), sum(Doxy1), sum(Doxy2))
-doxy_sim10 %>% mutate(RowSum=rowSums(.[setdiff(names(.),c("time", "Inc", "prevB", "prevA", "prevAB", "prevGC", "ARx", "Doxy1", "Doxy2", "Doxy3"))])) %>% 
-  select(RowSum, Doxy1, Doxy2)%>% summarise(min(RowSum), max(RowSum), sum(Doxy1), sum(Doxy2))
-doxy_sim25 %>% mutate(RowSum=rowSums(.[setdiff(names(.),c("time", "Inc", "prevB", "prevA", "prevAB", "prevGC", "ARx", "Doxy1", "Doxy2", "Doxy3"))])) %>% 
-  select(RowSum, Doxy1, Doxy2)%>% summarise(min(RowSum), max(RowSum), sum(Doxy1), sum(Doxy2))
-doxy_sim50 %>% mutate(RowSum=rowSums(.[setdiff(names(.),c("time", "Inc", "prevB", "prevA", "prevAB", "prevGC", "ARx", "Doxy1", "Doxy2", "Doxy3"))])) %>% 
-  select(RowSum, Doxy1, Doxy2)%>% summarise(min(RowSum), max(RowSum), sum(Doxy1), sum(Doxy2))
-doxy_sim75 %>% mutate(RowSum=rowSums(.[setdiff(names(.),c("time", "Inc", "prevB", "prevA", "prevAB", "prevGC", "ARx", "Doxy1", "Doxy2", "Doxy3"))])) %>% 
-  select(RowSum, Doxy1, Doxy2)%>% summarise(min(RowSum), max(RowSum), sum(Doxy1), sum(Doxy2))
-doxy_sim90 %>% mutate(RowSum=rowSums(.[setdiff(names(.),c("time", "Inc", "prevB", "prevA", "prevAB", "prevGC", "ARx", "Doxy1", "Doxy2", "Doxy3"))])) %>% 
-  select(RowSum, Doxy1, Doxy2)%>% summarise(min(RowSum), max(RowSum), sum(Doxy1), sum(Doxy2))
+doxy_sim0 %>% mutate(RowSum=rowSums(.[setdiff(names(.),c("time", "Inc", "prevB", "prevA", "prevAB", "prev0", "prevGC", "ARx"))])) %>% 
+  select(RowSum) %>% summarise(min(RowSum), max(RowSum))
+doxy_sim10 %>% mutate(RowSum=rowSums(.[setdiff(names(.),c("time", "Inc", "prevB", "prevA", "prevAB", "prev0", "prevGC", "ARx"))])) %>% 
+  select(RowSum)%>% summarise(min(RowSum), max(RowSum))
+doxy_sim25 %>% mutate(RowSum=rowSums(.[setdiff(names(.),c("time", "Inc", "prevB", "prevA", "prevAB", "prev0", "prevGC", "ARx"))])) %>% 
+  select(RowSum)%>% summarise(min(RowSum), max(RowSum))
+doxy_sim50 %>% mutate(RowSum=rowSums(.[setdiff(names(.),c("time", "Inc", "prevB", "prevA", "prevAB", "prev0", "prevGC", "ARx"))])) %>% 
+  select(RowSum)%>% summarise(min(RowSum), max(RowSum))
+doxy_sim75 %>% mutate(RowSum=rowSums(.[setdiff(names(.),c("time", "Inc", "prevB", "prevA", "prevAB", "prev0", "prevGC", "ARx"))])) %>% 
+  select(RowSum)%>% summarise(min(RowSum), max(RowSum))
 
-doxy_sim0 <- doxy_sim0 %>% select(-Doxy1, -Doxy2, -Doxy3)
-doxy_sim10 <- doxy_sim10 %>% select(-Doxy1, -Doxy2, -Doxy3)
-doxy_sim25 <- doxy_sim25 %>% select(-Doxy1, -Doxy2, -Doxy3)
-doxy_sim50 <- doxy_sim50 %>% select(-Doxy1, -Doxy2, -Doxy3)
-doxy_sim75 <- doxy_sim75 %>% select(-Doxy1, -Doxy2, -Doxy3)
-doxy_sim90 <- doxy_sim90 %>% select(-Doxy1, -Doxy2, -Doxy3)
 ```
 
 ```{r}
-df_list <- list(doxy_sim0 %>% select(-Inc, -prevB, -prevA, -prevAB, -prevGC, -ARx), 
-                doxy_sim10 %>% select(-Inc, -prevB, -prevA, -prevAB, -prevGC, -ARx), 
-                doxy_sim25 %>% select(-Inc, -prevB, -prevA, -prevAB, -prevGC, -ARx), 
-                doxy_sim50 %>% select(-Inc, -prevB, -prevA, -prevAB, -prevGC, -ARx), 
-                doxy_sim75 %>% select(-Inc, -prevB, -prevA, -prevAB, -prevGC, -ARx),
-                doxy_sim90 %>% select(-Inc, -prevB, -prevA, -prevAB, -prevGC, -ARx))
+df_list <- list(doxy_sim0 %>% select(-Inc, -prevB, -prevA, -prevAB, -prev0, -prevGC, -ARx), 
+                doxy_sim10 %>% select(-Inc, -prevB, -prevA, -prevAB, -prev0,-prevGC, -ARx), 
+                doxy_sim25 %>% select(-Inc, -prevB, -prevA, -prevAB, -prev0, -prevGC, -ARx), 
+                doxy_sim50 %>% select(-Inc, -prevB, -prevA, -prevAB, -prev0, -prevGC, -ARx), 
+                doxy_sim75 %>% select(-Inc, -prevB, -prevA, -prevAB, -prev0, -prevGC, -ARx))
 temp <- lapply(X = df_list, SI.clean)
+# names(temp) <- c("doxy_sim_long0", "doxy_sim_long10", "doxy_sim_long25", "doxy_sim_long50", "doxy_sim_long75")
+# list2env(temp, envir = .GlobalEnv)
 
 doxy_sim_long0 <- temp[[1]]
 doxy_sim_long10 <- temp[[2]]
 doxy_sim_long25 <- temp[[3]]
 doxy_sim_long50 <- temp[[4]]
 doxy_sim_long75 <- temp[[5]]
-doxy_sim_long90 <- temp[[6]]
+
 ```
 
 ```{r}
@@ -310,11 +303,8 @@ doxy_sim_long50 <- doxy_sim_long50 %>% mutate(DoxyPEP = "50%")
 doxy_sim75 <- doxy_sim75 %>% mutate(DoxyPEP = "75%")
 doxy_sim_long75 <- doxy_sim_long75 %>% mutate(DoxyPEP = "75%")
 
-doxy_sim90 <- doxy_sim90 %>% mutate(DoxyPEP = "90%")
-doxy_sim_long90 <- doxy_sim_long90 %>% mutate(DoxyPEP = "90%")
-
-doxy_sim_all <- rbind(doxy_sim0, doxy_sim10, doxy_sim25, doxy_sim50, doxy_sim75, doxy_sim90)
-doxy_sim_long_all <- rbind(doxy_sim_long0, doxy_sim_long10, doxy_sim_long25, doxy_sim_long50, doxy_sim_long75, doxy_sim_long90)
+doxy_sim_all <- rbind(doxy_sim0, doxy_sim10, doxy_sim25, doxy_sim50, doxy_sim75)
+doxy_sim_long_all <- rbind(doxy_sim_long0, doxy_sim_long10, doxy_sim_long25, doxy_sim_long50, doxy_sim_long75)
 ```
 
 ```{r}
@@ -323,11 +313,9 @@ SI.outputs(doxy_sim10, doxy_sim_long10)
 SI.outputs(doxy_sim25, doxy_sim_long25)
 SI.outputs(doxy_sim50, doxy_sim_long50)
 SI.outputs(doxy_sim75, doxy_sim_long75)
-SI.outputs(doxy_sim90, doxy_sim_long90)
 ```
 
 ```{r}
-#View model outcomes by DoxyPEP utilization
 doxy_sim_all <- doxy_sim_all %>%
   group_by(DoxyPEP) %>%
   mutate(CumInc = cumsum(Inc),
@@ -340,14 +328,13 @@ doxy_sim_all %>%
   group_by(DoxyPEP) %>%
   summarise(CumInc5 = CumInc[time == 1825],
             CumInc20 = CumInc[time == 7300],
-            Time84 = min(time[prevB >= 0.84])/365,
+            Time87 = min(time[prevB >= 0.84])/365,
             ARx5 = CumARx[time == 1825],
             ARx20 = CumARx[time == 7300]) %>%
-    mutate(Rel_CI5 = 1-CumInc5/CumInc5[DoxyPEP == "0%"],
+  mutate(Rel_CI5 = 1-CumInc5/CumInc5[DoxyPEP == "0%"],
             Rel_CI20 = 1-CumInc20/CumInc20[DoxyPEP == "0%"],
             Rel_A5 = 1-ARx5/ARx5[DoxyPEP == "0%"],
             Rel_A20 = 1-ARx20/ARx20[DoxyPEP == "0%"])
-  
 ```
 
 ```{r}
@@ -360,39 +347,26 @@ resB <- doxy_sim_all %>%
             prevGC = prevGC[time == MinT],
             IR = IR[time==MinT])
 
-#pdf(paste0(filepath, "DOXYPEP_PrevHI.pdf"), height = 6, width = 8)
-prev_HI <- ggplot() +
+#pdf(paste0(filepath, "DOXYPEP_PrevALL.pdf"), height = 6, width = 8)
+prev <- ggplot() +
   geom_line(data = doxy_sim_all, aes(x = time/365, y = prevGC*100, col = factor(DoxyPEP)), size = 1) +
   geom_point(data = resB, aes(x = MinT/365, y = prevGC*100, col = factor(DoxyPEP)), size = 3, shape = 19) +
-  theme_classic() + xlab("Years") + ylab("Gonococcal Infection Prevalence (%)") + labs(col = "DoxyPEP Uptake in High\nActivity Group") + theme(text = element_text(size=15), legend.position = c(0.80, 0.25)) +
-  scale_color_manual(values = c("#172869", "#6C6C9D","#1BB6AF", "#A6E000", "#FC6882", "#C70E7B"))
-prev_HI
+  theme_classic() + xlab("Years") + ylab("Gonococcal Infection Prevalence (%)") + labs(col = "DoxyPEP Uptake") + theme(text = element_text(size=15), legend.position = c(0.85, 0.25)) +
+  scale_color_manual(values = c("#172869", "#1BB6AF", "#A6E000", "#FC6882", "#C70E7B"))
+prev
 #dev.off()
-#ggsave(file = paste0(filepath, "DOXYPEP_PrevHI.svg"), plot = prev_HI, height = 6, width = 8)
+#ggsave(file = paste0(filepath, "DOXYPEP_PrevALL.svg"), plot = prev, height = 6, width = 8)
 
-#pdf(paste0(filepath, "DOXYPEP_IncHI.pdf"), height = 6, width = 8)
-inc_HI <- ggplot() +
-   geom_line(data = doxy_sim_all, aes(x = time/365, y = IR*365*100, col = factor(DoxyPEP)), size = 1) +
-   geom_point(data = resB, aes(x = MinT/365, y = IR*365*100, col = factor(DoxyPEP)), size = 3, shape = 19) +
-   theme_classic() + xlab("Years") + ylab("Incidence Rate (Cases/100 PY)") + labs(col = "DoxyPEP Uptake in High\nActivity Group") + theme(text = element_text(size=15), legend.position = c(0.85, 0.25)) +
-   scale_color_manual(values = c("#172869", "#6C6C9D","#1BB6AF", "#A6E000", "#FC6882", "#C70E7B"))
-inc_HI
+#pdf(paste0(filepath, "DOXYPEP_IncALL.pdf"), height = 6, width = 8)
+inc <- ggplot() +
+  geom_line(data = doxy_sim_all, aes(x = time/365, y = IR*365*100, col = factor(DoxyPEP)), size = 1) +
+  geom_point(data = resB, aes(x = MinT/365, y = IR*365*100, col = factor(DoxyPEP)), size = 3, shape = 19) +
+  theme_classic() + xlab("Years") + ylab("Incidence Rate (Cases/100 PY)") + labs(col = "DoxyPEP Uptake") + theme(text = element_text(size=15), legend.position = c(0.85, 0.25)) +
+  scale_color_manual(values = c("#172869", "#1BB6AF", "#A6E000", "#FC6882", "#C70E7B"))
+inc
 #dev.off()
-#ggsave(file = paste0(filepath, "DOXYPEP_IncHI.svg"), plot = inc_HI, height = 6, width = 8)
+#ggsave(file = paste0(filepath, "DOXYPEP_IncALL.svg"), plot = inc, height = 6, width = 8)
 ```
-
-```{r}
-#check infection burden by risk group
-check <- doxy_sim_long_all %>%
-  group_by(time, RiskGroup, InfectState, DoxyPEP) %>%
-  filter(InfectState == "Asymptomatic Infected" | InfectState == "Symptomatic Infected") %>%
-  summarise(N = sum(individuals))
-
-ggplot(data = check) +
-  geom_line(aes(x = time, y = N, col = DoxyPEP)) + 
-  facet_grid(InfectState ~ RiskGroup)
-```
-
 
 ```{r}
 baseline <- doxy_sim_all %>%
@@ -421,26 +395,25 @@ cumcases %>%
 
 ```{r}
 #Visualize PR and IRR relative to baseline (0% DoxyPEP uptake)
-#pdf(paste0(filepath, "DOXYPEP_PRHI.pdf"), height = 3, width = 3)
-PR_HI <- ggplot() +
+#pdf(paste0(filepath, "DOXYPEP_PR_ALL.pdf"), height = 3, width = 3)
+PR <- ggplot() +
   geom_line(data = cumcases, aes(x = time/365, y = PR, col = factor(DoxyPEP)), size = 1) +
   geom_point(data = resB, aes(x = MinT/365, y = PR, col = factor(DoxyPEP)), size = 3, shape = 19) +
   theme_classic() + xlab("Years") + ylab("Prevalence Ratio") + labs(col = "DoxyPEP Uptake") + theme(text = element_text(size=15), legend.position = "none") +
-  scale_color_manual(values = c("#172869", "#6C6C9D","#1BB6AF", "#A6E000", "#FC6882", "#C70E7B"))
-PR_HI
+  scale_color_manual(values = c("#172869", "#1BB6AF", "#A6E000", "#FC6882", "#C70E7B"))
+PR
 #dev.off()
-#ggsave(file = paste0(filepath, "DOXYPEP_PRHI.svg"), plot = PR_HI, height = 3, width = 3)
+#ggsave(file = paste0(filepath, "DOXYPEP_PR_ALL.svg"), plot = PR, height = 3, width = 3)
 
-#pdf(paste0(filepath, "DOXYPEP_IRRHI.pdf"), height = 3, width = 3)
-IRR_HI <- ggplot() +
+#pdf(paste0(filepath, "DOXYPEP_IRR_ALL.pdf"), height = 3, width = 3)
+IRR <- ggplot() +
   geom_line(data = cumcases, aes(x = time/365, y = IRR, col = factor(DoxyPEP)), size = 1) +
   geom_point(data = resB, aes(x = MinT/365, y = IRR, col = factor(DoxyPEP)), size = 3, shape = 19) +
-  theme_classic() + xlab("Years") + ylab("Incidence Rate Ratio") + labs(col = "DoxyPEP Uptake") +
-   theme(text = element_text(size=15), legend.position = "none") +
-   scale_color_manual(values = c("#172869", "#6C6C9D","#1BB6AF", "#A6E000", "#FC6882", "#C70E7B"))
-IRR_HI
+  theme_classic() + xlab("Years") + ylab("Incidence Rate Ratio") + labs(col = "DoxyPEP Uptake") + theme(text = element_text(size=15), legend.position = "none") +
+  scale_color_manual(values = c("#172869", "#1BB6AF", "#A6E000", "#FC6882", "#C70E7B"))
+IRR
 #dev.off()
-#ggsave(file = paste0(filepath, "DOXYPEP_IRRHI.svg"), plot = IRR_HI, height = 3, width = 3)
+#ggsave(file = paste0(filepath, "DOXYPEP_IRR_ALL.svg"), plot = IRR, height = 3, width = 3)
 ```
 
 
@@ -452,17 +425,18 @@ infectiondat <- doxy_sim_long_all %>%
   summarise(prev = sum(individuals)/10^6) %>%
   mutate(percent = prev/sum(prev)) %>%
   mutate(ResistLabels = ifelse(ResistState == "Neither", "Neither",
-                               ifelse(ResistState == "B only", "Doxycycline\nonly",
-                                      ifelse(ResistState == "A only", "Ceftriaxone\nonly",
-                                             ifelse(ResistState == "A and B", "Ceftriaxone +\nDoxycycline", NA)))))
+                               ifelse(ResistState == "B only", "Doxycycline only",
+                                      ifelse(ResistState == "A only", "Ceftriaxone only",
+                                             ifelse(ResistState == "A and B", "Ceftriaxone and\nDoxycycline", NA)))))
 
-#pdf(paste0(filepath, "ResistProfileHI.pdf"), width = 7.5, height = 5)
+#pdf(paste0(filepath, "ResistProfileALL.pdf"), width = 7.5, height = 5)
 #plot prevalence of gonorrhea over time, by Resistance Profile
-ggplot(infectiondat,aes(x=time/365, y=percent*100, fill = factor(ResistLabels, levels = c("Neither", "Doxycycline\nonly", "Ceftriaxone\nonly", "Ceftriaxone +\nDoxycycline")))) +
+ggplot(infectiondat,aes(x=time/365, y=percent*100, fill = factor(ResistLabels, levels = c("Neither", "Doxycycline only", "Ceftriaxone only", "Ceftriaxone and\nDoxycycline")))) +
   geom_area() + scale_fill_manual(values = c("turquoise3", "#E9A17C", "mediumpurple", "deeppink2")) +
   theme_classic() + facet_wrap(~DoxyPEP) +
-  xlab("Years") + ylab("% of Gonococcal Infections") + labs(fill = "Resistance Profile") +
-  #theme(legend.position = "top") +
+  xlab("Years") + ylab("% of Gonococcal Infections") + 
+  labs(fill = "Resistance Profile", subtitle = "DoxyPEP Uptake Level") +
+  theme(legend.position = c(0.84,0.2), plot.subtitle = element_text(hjust = 0.5)) +
   geom_hline(yintercept = 5, col = "white", linetype = "dashed") + geom_hline(yintercept = 84, col = "white", linetype = "dotted")
 #dev.off()
 ```

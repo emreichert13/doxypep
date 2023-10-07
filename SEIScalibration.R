@@ -1,16 +1,23 @@
 
-#DOXYPEP model calibration
+#DOXY-PEP model calibration
 # E Reichert, 02.2023
 
 #Model Calibration
 #see what parameters lead to under status quo conditions
 
-source("~/Documents/2021 Grad lab research/DOXYPEP/DoxyPEPcode/DOXYfunctions.R")
+# Change to your file path for folder where all doxy-PEP code is stored
+filepath <- "~/Documents/2021 Grad lab research/DOXYPEP/"
+
+source(paste0(filepath, "DoxyPEPcode/DOXYfunctions.R"))
+
+#load necessary packages
 library(deSolve)
 library(dplyr)
 library(tidyr)
 library(stringr)
 library(ggplot2)
+
+######## Calibrate a ceftriaxone-only model to 3.0% GC prevalence #######
 
 #SET PARAM VALUES
 #parameters that will stay constant throughout model
@@ -26,8 +33,6 @@ resA = 0.0001        #initial prev of resistance to A
 gamma = 1/1          #rate of removal from exposure compartment (1/day)
 
 #Set model duration + initial conditions
-
-#how long to run the model?
 years = 2
 tstep = 1 #in days
 
@@ -115,14 +120,15 @@ calibration.SI <- function(t, x, parms){
 ### model parameters from MLE fitting  ###
 ##########################################
 
-#start with parameter values from Reichert et al. 2023
-theta <- c(logit.b=logit(0.46),  #transmission probability
-           log.c_min=log(1.22),  #min rate of partner change
+#start with parameter value estimates from the literature
+# (Reichert et al. 2023 and other sources listed in Supp Table 1)
+theta <- c(logit.b=logit(0.5),        #transmission probability
+           log.c_min=log(1.22),       #min rate of partner change
            logit.epsilon=logit(0.24), #epsilon
-           logit.sigma = logit(0.60), #pr of incident symptomatic infection
-           log.Ts=log(0.031*365), #duration of infectiousness if symptomatic (days) = average time to treatment
-           log.g=log(.462*365), #duration of infectiousness if asymptomatic and untreated (days)
-           logit.Tm =logit(0.40)) #screening rate per year
+           logit.sigma = logit(0.5),  #pr of incident symptomatic infection
+           log.Ts=log(0.04*365),      #duration of infectiousness if symptomatic (days) = average time to treatment
+           log.g=log(.288*365),       #duration of infectiousness if asymptomatic and untreated (days)
+           logit.Tm =logit(0.4))      #screening rate per year
 
 
 ### set parameters ###
@@ -287,7 +293,7 @@ calibration_sim <- calibration_sim %>%
 ggplot(data = calibration_sim, aes(x = time, y = prev_GC)) + geom_point()
 hist(calibration_sim$prev_GC)
 
-######## APPENDIX -- explore params for prevalence distribution
+######## APPENDIX -- explore params for prevalence distribution #######
 #define range
 p = seq(0, 0.10, length=100)
 #create plot of Beta distribution with shape parameters 2 and 10
