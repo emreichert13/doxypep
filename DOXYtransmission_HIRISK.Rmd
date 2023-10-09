@@ -183,6 +183,7 @@ doxyPEP.SI <- function(t, x, parms){
     Inc = sum(beta %*% ((Y0 + Z0) + fA*(Ya+Za) + fB*(Yb+Zb) + fAB*(Yab+Zab))*S)
     prevGC = (sum(Y0) + sum(Z0) + sum(Ya) + sum(Za) + sum(Yb)+sum(Zb)+sum(Yab)+sum(Zab))/10^6
     ARx = sum(Ts*Y0 + Tm*Z0 + pi_s*Tsr*Ya + Ts*Yb + Tm*Zb + pi_s*Tsr*Yab)
+    BRx = sum(prB*gamma*(E0 + Ea + Eb + Eab))
     Doxy = prB*(1-kappa)*(1-omega_b)*(gamma*E0 + gamma*Ea)
     
     #susceptibles
@@ -226,7 +227,7 @@ doxyPEP.SI <- function(t, x, parms){
       omega_a*Tm*Zb -
       g*Zab - rho*Zab
     der <- c(dS, dE0, dY0, dZ0, dEa, dYa, dZa, dEb, dYb, dZb, dEab, dYab, dZab)
-    list(der, Inc = Inc, prevA = prevA, prevB = prevB, prevAB = prevAB, prevGC = prevGC, ARx = ARx, Doxy = Doxy)
+    list(der, Inc = Inc, prevA = prevA, prevB = prevB, prevAB = prevAB, prevGC = prevGC, ARx = ARx, BRx = BRx, Doxy = Doxy)
   })
 }
 ```
@@ -256,17 +257,17 @@ III. Analyze Model Output
 ```{r}
  #ensure the total pop size does not change
 # and that only high risk group is receiving DoxyPEP
-doxy_sim0 %>% mutate(RowSum=rowSums(.[setdiff(names(.),c("time", "Inc", "prevB", "prevA", "prevAB", "prevGC", "ARx", "Doxy1", "Doxy2", "Doxy3"))])) %>% 
+doxy_sim0 %>% mutate(RowSum=rowSums(.[setdiff(names(.),c("time", "Inc", "prevB", "prevA", "prevAB", "prevGC", "ARx", "BRx", "Doxy1", "Doxy2", "Doxy3"))])) %>% 
   select(RowSum, Doxy1, Doxy2) %>% summarise(min(RowSum), max(RowSum), sum(Doxy1), sum(Doxy2))
-doxy_sim10 %>% mutate(RowSum=rowSums(.[setdiff(names(.),c("time", "Inc", "prevB", "prevA", "prevAB", "prevGC", "ARx", "Doxy1", "Doxy2", "Doxy3"))])) %>% 
+doxy_sim10 %>% mutate(RowSum=rowSums(.[setdiff(names(.),c("time", "Inc", "prevB", "prevA", "prevAB", "prevGC", "ARx", "BRx", "Doxy1", "Doxy2", "Doxy3"))])) %>% 
   select(RowSum, Doxy1, Doxy2)%>% summarise(min(RowSum), max(RowSum), sum(Doxy1), sum(Doxy2))
-doxy_sim25 %>% mutate(RowSum=rowSums(.[setdiff(names(.),c("time", "Inc", "prevB", "prevA", "prevAB", "prevGC", "ARx", "Doxy1", "Doxy2", "Doxy3"))])) %>% 
+doxy_sim25 %>% mutate(RowSum=rowSums(.[setdiff(names(.),c("time", "Inc", "prevB", "prevA", "prevAB", "prevGC", "ARx", "BRx", "Doxy1", "Doxy2", "Doxy3"))])) %>% 
   select(RowSum, Doxy1, Doxy2)%>% summarise(min(RowSum), max(RowSum), sum(Doxy1), sum(Doxy2))
-doxy_sim50 %>% mutate(RowSum=rowSums(.[setdiff(names(.),c("time", "Inc", "prevB", "prevA", "prevAB", "prevGC", "ARx", "Doxy1", "Doxy2", "Doxy3"))])) %>% 
+doxy_sim50 %>% mutate(RowSum=rowSums(.[setdiff(names(.),c("time", "Inc", "prevB", "prevA", "prevAB", "prevGC", "ARx", "BRx", "Doxy1", "Doxy2", "Doxy3"))])) %>% 
   select(RowSum, Doxy1, Doxy2)%>% summarise(min(RowSum), max(RowSum), sum(Doxy1), sum(Doxy2))
-doxy_sim75 %>% mutate(RowSum=rowSums(.[setdiff(names(.),c("time", "Inc", "prevB", "prevA", "prevAB", "prevGC", "ARx", "Doxy1", "Doxy2", "Doxy3"))])) %>% 
+doxy_sim75 %>% mutate(RowSum=rowSums(.[setdiff(names(.),c("time", "Inc", "prevB", "prevA", "prevAB", "prevGC", "ARx", "BRx", "Doxy1", "Doxy2", "Doxy3"))])) %>% 
   select(RowSum, Doxy1, Doxy2)%>% summarise(min(RowSum), max(RowSum), sum(Doxy1), sum(Doxy2))
-doxy_sim90 %>% mutate(RowSum=rowSums(.[setdiff(names(.),c("time", "Inc", "prevB", "prevA", "prevAB", "prevGC", "ARx", "Doxy1", "Doxy2", "Doxy3"))])) %>% 
+doxy_sim90 %>% mutate(RowSum=rowSums(.[setdiff(names(.),c("time", "Inc", "prevB", "prevA", "prevAB", "prevGC", "ARx", "BRx", "Doxy1", "Doxy2", "Doxy3"))])) %>% 
   select(RowSum, Doxy1, Doxy2)%>% summarise(min(RowSum), max(RowSum), sum(Doxy1), sum(Doxy2))
 
 doxy_sim0 <- doxy_sim0 %>% select(-Doxy1, -Doxy2, -Doxy3)
@@ -278,12 +279,12 @@ doxy_sim90 <- doxy_sim90 %>% select(-Doxy1, -Doxy2, -Doxy3)
 ```
 
 ```{r}
-df_list <- list(doxy_sim0 %>% select(-Inc, -prevB, -prevA, -prevAB, -prevGC, -ARx), 
-                doxy_sim10 %>% select(-Inc, -prevB, -prevA, -prevAB, -prevGC, -ARx), 
-                doxy_sim25 %>% select(-Inc, -prevB, -prevA, -prevAB, -prevGC, -ARx), 
-                doxy_sim50 %>% select(-Inc, -prevB, -prevA, -prevAB, -prevGC, -ARx), 
-                doxy_sim75 %>% select(-Inc, -prevB, -prevA, -prevAB, -prevGC, -ARx),
-                doxy_sim90 %>% select(-Inc, -prevB, -prevA, -prevAB, -prevGC, -ARx))
+df_list <- list(doxy_sim0 %>% select(-Inc, -prevB, -prevA, -prevAB, -prevGC, -ARx, -BRx), 
+                doxy_sim10 %>% select(-Inc, -prevB, -prevA, -prevAB, -prevGC, -ARx, -BRx), 
+                doxy_sim25 %>% select(-Inc, -prevB, -prevA, -prevAB, -prevGC, -ARx, -BRx), 
+                doxy_sim50 %>% select(-Inc, -prevB, -prevA, -prevAB, -prevGC, -ARx, -BRx), 
+                doxy_sim75 %>% select(-Inc, -prevB, -prevA, -prevAB, -prevGC, -ARx, -BRx),
+                doxy_sim90 %>% select(-Inc, -prevB, -prevA, -prevAB, -prevGC, -ARx, -BRx))
 temp <- lapply(X = df_list, SI.clean)
 
 doxy_sim_long0 <- temp[[1]]
@@ -332,6 +333,7 @@ doxy_sim_all <- doxy_sim_all %>%
   group_by(DoxyPEP) %>%
   mutate(CumInc = cumsum(Inc),
          CumARx = cumsum(ARx),
+         CumBRx = cumsum(BRx),
          IR = Inc/(S1+S2+S3)) %>%
   ungroup()
 
@@ -342,7 +344,9 @@ doxy_sim_all %>%
             CumInc20 = CumInc[time == 7300],
             Time84 = min(time[prevB >= 0.84])/365,
             ARx5 = CumARx[time == 1825],
-            ARx20 = CumARx[time == 7300]) %>%
+            ARx20 = CumARx[time == 7300],
+            BRx5 = CumBRx[time == 1825],
+            BRx20 = CumBRx[time == 7300]) %>%
     mutate(Rel_CI5 = 1-CumInc5/CumInc5[DoxyPEP == "0%"],
             Rel_CI20 = 1-CumInc20/CumInc20[DoxyPEP == "0%"],
             Rel_A5 = 1-ARx5/ARx5[DoxyPEP == "0%"],
