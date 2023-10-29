@@ -456,13 +456,13 @@ infectiondat <- doxy_sim_long_all %>%
   summarise(prev = sum(individuals)/10^6) %>%
   mutate(percent = prev/sum(prev)) %>%
   mutate(ResistLabels = ifelse(ResistState == "Neither", "Neither",
-                               ifelse(ResistState == "B only", "Doxycycline\nonly",
+                               ifelse(ResistState == "B only", "High-level\nTetracycline only",
                                       ifelse(ResistState == "A only", "Ceftriaxone\nonly",
-                                             ifelse(ResistState == "A and B", "Ceftriaxone +\nDoxycycline", NA)))))
+                                             ifelse(ResistState == "A and B", "Dual", NA)))))
 
 #pdf(paste0(filepath, "ResistProfileHI.pdf"), width = 7.5, height = 5)
 #plot prevalence of gonorrhea over time, by Resistance Profile
-ggplot(infectiondat,aes(x=time/365, y=percent*100, fill = factor(ResistLabels, levels = c("Neither", "Doxycycline\nonly", "Ceftriaxone\nonly", "Ceftriaxone +\nDoxycycline")))) +
+ggplot(infectiondat,aes(x=time/365, y=percent*100, fill = factor(ResistLabels, levels = c("Neither", "High-level\nTetracycline only", "Ceftriaxone\nonly", "Dual")))) +
   geom_area() + scale_fill_manual(values = c("turquoise3", "#E9A17C", "mediumpurple", "deeppink2")) +
   theme_classic() + facet_wrap(~DoxyPEP) +
   xlab("Years") + ylab("% of Gonococcal Infections") + labs(fill = "Resistance Profile") +
