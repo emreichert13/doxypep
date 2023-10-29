@@ -290,7 +290,7 @@ g3 <- ggplot() +
   geom_line(data = SensResults3, aes(x = time/365, y = prevGC*100, col = factor(DoxyPEP)), size = 1) +
   geom_point(data = resB3, aes(x = MinT/365, y = prevGC*100, col = factor(DoxyPEP)), size = 3, shape = 19) +
   theme_classic() + xlab("Years") + ylab("Gonococcal Infection\nPrevalence (%)") + 
-  labs(col = "Doxy-PEP Uptake", title = "A.", subtitle = "Initial Prevalence of High-Level Doxycycline Resistance") + 
+  labs(col = "Doxy-PEP Uptake", title = "A.", subtitle = "Initial Prevalence of High-Level Tetracycline Resistance") + 
   theme(text = element_text(size=12), legend.text = element_text(size=12), axis.text = element_text(size=12), 
         plot.subtitle = element_text(hjust = 0.5)) +
   scale_color_manual(values = c("#172869", "#6C6C9D","#1BB6AF", "#A6E000", "#FC6882", "#C70E7B")) +
@@ -320,7 +320,7 @@ g4 <- ggplot() +
   geom_line(data = cumcases3, aes(x = time/365, y = PR, col = factor(DoxyPEP)), size = 1) +
   geom_point(data = resB3, aes(x = MinT/365, y = PR, col = factor(DoxyPEP)), size = 3, shape = 19) +
   theme_classic() + xlab("Years") + ylab("Prevalence Ratio\n   ") + 
-  labs(col = "Doxy-PEP Uptake", title = "B.", subtitle = "Initial Prevalence of High-Level Doxycycline Resistance") + 
+  labs(col = "Doxy-PEP Uptake", title = "B.", subtitle = "Initial Prevalence of High-Level Tetracycline Resistance") + 
   theme(text = element_text(size=12), legend.text = element_text(size=12), axis.text = element_text(size=12),
         plot.subtitle = element_text(hjust = 0.5)) +
   scale_color_manual(values = c("#172869", "#6C6C9D","#1BB6AF", "#A6E000", "#FC6882", "#C70E7B")) +
