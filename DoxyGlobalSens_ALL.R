@@ -223,7 +223,7 @@ RunODE <- function (x) {
 
 res_global <- data.frame()
 
-for (i in 1:500) {
+for (i in 1:1000) {
   
   set.seed(i)
   # Draw parameter values
@@ -341,9 +341,9 @@ write.csv(res_global, paste0(filepath, "GlobalSensResults_ALL.csv"), row.names=F
 
 res_global %>%
   group_by(DoxyPEP) %>%
-  summarise(TimeA_inf = sum(TimeA == Inf)/500,
-            TimeAB_inf = sum(TimeAB == Inf)/500,
-            TimeB_inf = sum(TimeB == Inf)/500)
+  summarise(TimeA_inf = sum(TimeA == Inf)/1000,
+            TimeAB_inf = sum(TimeAB == Inf)/1000,
+            TimeB_inf = sum(TimeB == Inf)/1000)
 
 # replace Inf values with value > 20 yrs - will leave a note in table
 res_global <- res_global %>% mutate_if(is.numeric, function(x) ifelse(is.infinite(x), 7301/365, x))
