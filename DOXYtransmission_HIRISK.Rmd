@@ -59,7 +59,7 @@ Tsr = Ts/3           #time to retreatment for symptomatic infection, if failure
 resA = 0.0001        #initial prev of resistance to A
 resB = 0.109         #initial prev of resistance to doxy
 gamma = 1/(1)        #rate of recovery from exposure
-kappa = 0.38         #proportion of doxyPEP treatments that fail (not due to resistance)
+#kappa = 0.38         #proportion of doxyPEP treatments that fail (not due to resistance)
 ```
 
 ```{r}
@@ -72,15 +72,15 @@ N1 <- N*pop.p[1]
 N2 <- N*pop.p[2]
 N3 <- N*pop.p[3]
 
-#distribute GC cases to have overall 3% prevalence
-x <- 0.03/(.3*0.029+.6*0.154+.1*0.817)
-
-gc_lo <- round(N1*x*0.029,0)
-gc_md <- round(N2*x*0.154,0)
-gc_hi <- round(N3*x*0.817,0)
+#estimated prevalence of GC in each sexual activity group, @ equilibrium
+# (mean from calibration model run; gives overall weighted GC prev of 3.0%)
+gc_lo <- round(N1*0.00480,0)
+gc_md <- round(N2*0.02576,0)
+gc_hi <- round(N3*0.13719,0)
 
 #estimated proportion of symp. infections at cross-sectional point in time, @ equilibrium
-prev_symp <- 0.10
+# (mean from calibration model run, 13%)
+prev_symp <- 0.13
 Y_gc_lo <- gc_lo*prev_symp
 Z_gc_lo <- gc_lo*(1-prev_symp)
 Y_gc_md <- gc_md*prev_symp
@@ -100,13 +100,20 @@ ZB <- c(Z_gc_lo, Z_gc_md, Z_gc_hi) * resB * (1-resA)
 YAB <- c(Y_gc_lo, Y_gc_md, Y_gc_hi) * (resA*resB)
 ZAB <- c(Z_gc_lo, Z_gc_md, Z_gc_hi) * (resA*resB)
 
-E0 <- c(gc_lo, gc_md, gc_hi) * 0.016 * (1-(resA + resB - resA*resB))
-Ea <- c(gc_lo, gc_md, gc_hi) * 0.016 * resA * (1-resB)
-Eb <- c(gc_lo, gc_md, gc_hi) * 0.016 * resB * (1-resA)
-Eab <- c(gc_lo, gc_md, gc_hi) * 0.016 * resA*resB
+#estimated proportion of individuals exposed at cross-sectional point in time, @ equilibrium
+# (mean from calibration model run, 0.07%)
+prev_exp <- 0.0007
+exp_lo <- round(N1*prev_exp,0)
+exp_md <- round(N2*prev_exp,0)
+exp_hi <- round(N3*prev_exp,0)
+
+E0 <- c(exp_lo, exp_md, exp_hi) * (1-(resA + resB - resA*resB))
+Ea <- c(exp_lo, exp_md, exp_hi) * resA * (1-resB)
+Eb <- c(exp_lo, exp_md, exp_hi) * resB * (1-resA)
+Eab<- c(exp_lo, exp_md, exp_hi) * resA * resB
 
 #start with overall prevalence of 3% of gonorrhea
-inits <- c(S1 = N1-1.016*gc_lo, S2 = N2-1.016*gc_md, S3 = N3-1.016*gc_hi,
+inits <- c(S1 = N1-gc_lo-exp_lo, S2 = N2-gc_md-exp_md, S3 = N3-gc_hi-exp_hi,
            E01 = E0[1], E02 = E0[2], E03 = E0[3], 
            Y01 = Y0[1], Y02 = Y0[2], Y03 = Y0[3],
            Z01 = Z0[1], Z02 = Z0[2], Z03 = Z0[3],
@@ -364,7 +371,7 @@ resB <- doxy_sim_all %>%
             prevGC = prevGC[time == MinT],
             IR = IR[time==MinT])
 
-#pdf(paste0(filepath, "DOXYPEP_PrevHI.pdf"), height = 6, width = 8)
+#pdf(paste0(filepath, "F1_DOXYPEP_PrevHI.pdf"), height = 6, width = 8)
 prev_HI <- ggplot() +
   geom_line(data = doxy_sim_all, aes(x = time/365, y = prevGC*100, col = factor(DoxyPEP)), size = 1) +
   geom_point(data = resB, aes(x = MinT/365, y = prevGC*100, col = factor(DoxyPEP)), size = 3, shape = 19) +
@@ -372,9 +379,9 @@ prev_HI <- ggplot() +
   scale_color_manual(values = c("#172869", "#6C6C9D","#1BB6AF", "#A6E000", "#FC6882", "#C70E7B"))
 prev_HI
 #dev.off()
-#ggsave(file = paste0(filepath, "DOXYPEP_PrevHI.svg"), plot = prev_HI, height = 6, width = 8)
+#ggsave(file = paste0(filepath, "F1_DOXYPEP_PrevHI.svg"), plot = prev_HI, height = 6, width = 8)
 
-#pdf(paste0(filepath, "DOXYPEP_IncHI.pdf"), height = 6, width = 8)
+#pdf(paste0(filepath, "SF1_DOXYPEP_IncHI.pdf"), height = 6, width = 8)
 inc_HI <- ggplot() +
    geom_line(data = doxy_sim_all, aes(x = time/365, y = IR*365*100, col = factor(DoxyPEP)), size = 1) +
    geom_point(data = resB, aes(x = MinT/365, y = IR*365*100, col = factor(DoxyPEP)), size = 3, shape = 19) +
@@ -382,7 +389,7 @@ inc_HI <- ggplot() +
    scale_color_manual(values = c("#172869", "#6C6C9D","#1BB6AF", "#A6E000", "#FC6882", "#C70E7B"))
 inc_HI
 #dev.off()
-#ggsave(file = paste0(filepath, "DOXYPEP_IncHI.svg"), plot = inc_HI, height = 6, width = 8)
+#ggsave(file = paste0(filepath, "SF1_DOXYPEP_IncHI.svg"), plot = inc_HI, height = 6, width = 8)
 ```
 
 ```{r}
@@ -425,7 +432,7 @@ cumcases %>%
 
 ```{r}
 #Visualize PR and IRR relative to baseline (0% DoxyPEP uptake)
-#pdf(paste0(filepath, "DOXYPEP_PRHI.pdf"), height = 3, width = 3)
+#pdf(paste0(filepath, "F1_DOXYPEP_PRHI.pdf"), height = 3, width = 3)
 PR_HI <- ggplot() +
   geom_line(data = cumcases, aes(x = time/365, y = PR, col = factor(DoxyPEP)), size = 1) +
   geom_point(data = resB, aes(x = MinT/365, y = PR, col = factor(DoxyPEP)), size = 3, shape = 19) +
@@ -433,9 +440,9 @@ PR_HI <- ggplot() +
   scale_color_manual(values = c("#172869", "#6C6C9D","#1BB6AF", "#A6E000", "#FC6882", "#C70E7B"))
 PR_HI
 #dev.off()
-#ggsave(file = paste0(filepath, "DOXYPEP_PRHI.svg"), plot = PR_HI, height = 3, width = 3)
+#ggsave(file = paste0(filepath, "F1_DOXYPEP_PRHI.svg"), plot = PR_HI, height = 3, width = 3)
 
-#pdf(paste0(filepath, "DOXYPEP_IRRHI.pdf"), height = 3, width = 3)
+#pdf(paste0(filepath, "SF1_DOXYPEP_IRRHI.pdf"), height = 3, width = 3)
 IRR_HI <- ggplot() +
   geom_line(data = cumcases, aes(x = time/365, y = IRR, col = factor(DoxyPEP)), size = 1) +
   geom_point(data = resB, aes(x = MinT/365, y = IRR, col = factor(DoxyPEP)), size = 3, shape = 19) +
@@ -444,7 +451,7 @@ IRR_HI <- ggplot() +
    scale_color_manual(values = c("#172869", "#6C6C9D","#1BB6AF", "#A6E000", "#FC6882", "#C70E7B"))
 IRR_HI
 #dev.off()
-#ggsave(file = paste0(filepath, "DOXYPEP_IRRHI.svg"), plot = IRR_HI, height = 3, width = 3)
+#ggsave(file = paste0(filepath, "SF1_DOXYPEP_IRRHI.svg"), plot = IRR_HI, height = 3, width = 3)
 ```
 
 
@@ -460,13 +467,18 @@ infectiondat <- doxy_sim_long_all %>%
                                       ifelse(ResistState == "A only", "Ceftriaxone\nonly",
                                              ifelse(ResistState == "A and B", "Dual", NA)))))
 
-#pdf(paste0(filepath, "ResistProfileHI.pdf"), width = 7.5, height = 5)
+infectiondat <- left_join(infectiondat, 
+                          resB %>% select(DoxyPEP, MinT),
+                          by = "DoxyPEP")
+
+#pdf(paste0(filepath, "F2_ResistProfileHI.pdf"), width = 7.5, height = 5)
 #plot prevalence of gonorrhea over time, by Resistance Profile
-ggplot(infectiondat,aes(x=time/365, y=percent*100, fill = factor(ResistLabels, levels = c("Neither", "High-level\nTetracycline only", "Ceftriaxone\nonly", "Dual")))) +
-  geom_area() + scale_fill_manual(values = c("turquoise3", "#E9A17C", "mediumpurple", "deeppink2")) +
+ggplot(data = infectiondat, aes(x=time/365, y=prev*100, fill = factor(ResistLabels, levels = c("Neither", "High-level\nTetracycline only", "Ceftriaxone\nonly", "Dual")))) +
+  geom_area() + 
+  scale_fill_manual(values = c("turquoise3", "#E9A17C", "mediumpurple", "deeppink2")) +
   theme_classic() + facet_wrap(~DoxyPEP) +
-  xlab("Years") + ylab("% of Gonococcal Infections") + labs(fill = "Resistance Profile") +
+  xlab("Years") + ylab("Prevalence of Gonococcal Infection (%)") + labs(fill = "Resistance Profile") +
   #theme(legend.position = "top") +
-  geom_hline(yintercept = 5, col = "white", linetype = "dashed") + geom_hline(yintercept = 84, col = "white", linetype = "dotted")
+  geom_vline(aes(xintercept = MinT/365), col = "black", linetype = "dashed")
 #dev.off()
 ```

@@ -8,7 +8,7 @@
 # Change to your file path for folder where all doxy-PEP code is stored
 filepath <- "~/Documents/2021 Grad lab research/DOXYPEP/"
 
-source(paste0(filepath, "DoxyPEPcode/DOXYfunctions.R"))
+source(paste0(filepath, "DoxyPEPcode/Final_02.24/DOXYfunctions.R"))
 
 #load necessary packages
 library(deSolve)
@@ -217,11 +217,11 @@ N2 <- N*pop.p[2]
 N3 <- N*pop.p[3]
 
 #distribute GC cases to have overall 3% prevalence
-x <- 0.03/(.3*0.029+.6*0.154+.1*0.817)
+x <- 0.03/(.3*0.03+.6*0.15+.1*0.82)
 
-gc_lo <- round(N1*x*0.029,0)
-gc_md <- round(N2*x*0.154,0)
-gc_hi <- round(N3*x*0.817,0)
+gc_lo <- round(N1*x*0.03,0)
+gc_md <- round(N2*x*0.15,0)
+gc_hi <- round(N3*x*0.82,0)
 
 #estimated proportion of symp. infections at cross-sectional point in time
 prev_symp <- 0.089
@@ -267,31 +267,27 @@ calibration_sim_long <- SI.clean(calibration_sim)
 # Visualize some outputs
 SI.visualize(data = calibration_sim_long)
 
-end <- calibration_sim[nrow(calibration_sim),]
-
-#Overall prevalence of gonorrhea at t=end years
-prev_GC_calibration <- sum(end[,8:22])/sum(end[,2:22])
-prev_GC_calibration
-
-#overall prevalence of resistance among cases at t=end years
-prev_resistance_calibration <- sum(end[,17:22])/(sum(end[,8:22]))
-prev_resistance_calibration
-
-#cross-section prev. of exposed at t=end years (for initiating transmission model)
-(end$E01 + end$Ea1)/(end$E01 + end$Ea1 + end$Y01 + end$Z01+ end$Ya1 + end$Za1)
-(end$E02 + end$Ea2)/(end$E02 + end$Ea2 + end$Y02 + end$Z02+ end$Ya2 + end$Za2)
-(end$E03 + end$Ea3)/(end$E03 + end$Ea3 + end$Y03 + end$Z03+ end$Ya3 + end$Za3)
-
-#cross-section prev. of symptomatic at t=end years (for initiating transmission model)
-(end$Y01+end$Y02+end$Y03+end$Ya1+end$Ya2+end$Ya3)/
-  (end$Y01+end$Y02+end$Y03+end$Ya1+end$Ya2+end$Ya3 + end$Z01+end$Z02+end$Z03+end$Za1+end$Za2+end$Za3)
-
-#view prevalence distribution over 2-yr calibration period
+#cross-section prev. of exposed and infected (by symptom status, sexual activity) 
+# at each timepoint over 2-yr calibration model (for initiating transmission model)
 calibration_sim <- calibration_sim %>%
-  mutate(prev_GC = (Y01 + Y02 + Y03 + Z01 + Z02 + Z03 + Ya1 + Ya2 + Ya3 + Za1 + Za2 + Za3)/10^6)
+  mutate(prev_gc = (Y01+Y02+Y03+Z01+Z02+Z03+Ya1+Ya2+Ya3+Za1+Za2+Za3)/10^6,
+         prev_res = (Ya1+Ya2+Ya3+Za1+Za2+Za3)/(prev_gc*10^6),
+         prev_exp = (E01+Ea1+E02+Ea2+E03+Ea3)/10^6,
+         prev_symp = (Y01+Y02+Y03+Ya1+Ya2+Ya3)/(prev_gc*10^6),
+         prev_lo = (Y01+Z01+Ya1+Za1)/(0.3*10^6),
+         prev_md = (Y02+Z02+Ya2+Za2)/(0.6*10^6),
+         prev_hi = (Y03+Z03+Ya3+Za3)/(0.1*10^6))
 
-ggplot(data = calibration_sim, aes(x = time, y = prev_GC)) + geom_point()
-hist(calibration_sim$prev_GC)
+mean(calibration_sim$prev_gc) 
+mean(calibration_sim$prev_res)
+mean(calibration_sim$prev_symp)
+mean(calibration_sim$prev_exp)
+mean(calibration_sim$prev_lo)
+mean(calibration_sim$prev_md)
+mean(calibration_sim$prev_hi)
+
+ggplot(data = calibration_sim, aes(x = time, y = prev_gc)) + geom_point()
+hist(calibration_sim$prev_gc)
 
 ######## APPENDIX -- explore params for prevalence distribution #######
 #define range

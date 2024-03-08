@@ -72,15 +72,15 @@ N1 <- N*pop.p[1]
 N2 <- N*pop.p[2]
 N3 <- N*pop.p[3]
 
-#distribute GC cases to have overall 3% prevalence
-x <- 0.03/(.3*0.029+.6*0.154+.1*0.817)
-
-gc_lo <- round(N1*x*0.029,0)
-gc_md <- round(N2*x*0.154,0)
-gc_hi <- round(N3*x*0.817,0)
+#estimated prevalence of GC in each sexual activity group, @ equilibrium
+# (mean from calibration model run; gives overall weighted GC prev of 3.0%)
+gc_lo <- round(N1*0.00480,0)
+gc_md <- round(N2*0.02576,0)
+gc_hi <- round(N3*0.13719,0)
 
 #estimated proportion of symp. infections at cross-sectional point in time, @ equilibrium
-prev_symp <- 0.10
+# (mean from calibration model run, 13%)
+prev_symp <- 0.13
 Y_gc_lo <- gc_lo*prev_symp
 Z_gc_lo <- gc_lo*(1-prev_symp)
 Y_gc_md <- gc_md*prev_symp
@@ -100,14 +100,25 @@ ZB <- c(Z_gc_lo, Z_gc_md, Z_gc_hi) * resB * (1-resA)
 YAB <- c(Y_gc_lo, Y_gc_md, Y_gc_hi) * (resA*resB)
 ZAB <- c(Z_gc_lo, Z_gc_md, Z_gc_hi) * (resA*resB)
 
+#estimated proportion of individuals exposed at cross-sectional point in time, @ equilibrium
+# (mean from calibration model run, 0.07%)
+prev_exp <- 0.0007
+exp_lo <- round(N1*prev_exp,0)
+exp_md <- round(N2*prev_exp,0)
+exp_hi <- round(N3*prev_exp,0)
+
 E0 <- c(gc_lo, gc_md, gc_hi) * 0.016 * (1-(resA + resB - resA*resB))
 Ea <- c(gc_lo, gc_md, gc_hi) * 0.016 * resA * (1-resB)
 Eb <- c(gc_lo, gc_md, gc_hi) * 0.016 * resB * (1-resA)
 Eab <- c(gc_lo, gc_md, gc_hi) * 0.016 * resA*resB
 
+E0 <- c(exp_lo, exp_md, exp_hi) * (1-(resA + resB - resA*resB))
+Ea <- c(exp_lo, exp_md, exp_hi) * resA * (1-resB)
+Eb <- c(exp_lo, exp_md, exp_hi) * resB * (1-resA)
+Eab<- c(exp_lo, exp_md, exp_hi) * resA * resB
 
 #start with overall prevalence of 3% of gonorrhea
-inits <- c(S1 = N1-1.016*gc_lo, S2 = N2-1.016*gc_md, S3 = N3-1.016*gc_hi,
+inits <- c(S1 = N1-gc_lo-exp_lo, S2 = N2-gc_md-exp_md, S3 = N3-gc_hi-exp_hi,
            E01 = E0[1], E02 = E0[2], E03 = E0[3], 
            Y01 = Y0[1], Y02 = Y0[2], Y03 = Y0[3],
            Z01 = Z0[1], Z02 = Z0[2], Z03 = Z0[3],
@@ -360,7 +371,7 @@ resB <- doxy_sim_all %>%
             prevGC = prevGC[time == MinT],
             IR = IR[time==MinT])
 
-#pdf(paste0(filepath, "DOXYPEP_PrevALL.pdf"), height = 6, width = 8)
+#pdf(paste0(filepath, "SF4_DOXYPEP_PrevALL.pdf"), height = 6, width = 8)
 prev <- ggplot() +
   geom_line(data = doxy_sim_all, aes(x = time/365, y = prevGC*100, col = factor(DoxyPEP)), size = 1) +
   geom_point(data = resB, aes(x = MinT/365, y = prevGC*100, col = factor(DoxyPEP)), size = 3, shape = 19) +
@@ -368,17 +379,17 @@ prev <- ggplot() +
   scale_color_manual(values = c("#172869", "#6C6C9D","#1BB6AF", "#A6E000", "#FC6882", "#C70E7B"))
 prev
 #dev.off()
-#ggsave(file = paste0(filepath, "DOXYPEP_PrevALL.svg"), plot = prev, height = 6, width = 8)
+#ggsave(file = paste0(filepath, "SF4_DOXYPEP_PrevALL.svg"), plot = prev, height = 6, width = 8)
 
-#pdf(paste0(filepath, "DOXYPEP_IncALL.pdf"), height = 6, width = 8)
-inc <- ggplot() +
-  geom_line(data = doxy_sim_all, aes(x = time/365, y = IR*365*100, col = factor(DoxyPEP)), size = 1) +
-  geom_point(data = resB, aes(x = MinT/365, y = IR*365*100, col = factor(DoxyPEP)), size = 3, shape = 19) +
-  theme_classic() + xlab("Years") + ylab("Incidence Rate (Cases/100 PY)") + labs(col = "DoxyPEP Uptake") + theme(text = element_text(size=15), legend.position = c(0.85, 0.25)) +
-  scale_color_manual(values = c("#172869", "#6C6C9D","#1BB6AF", "#A6E000", "#FC6882", "#C70E7B"))
-inc
-#dev.off()
-#ggsave(file = paste0(filepath, "DOXYPEP_IncALL.svg"), plot = inc, height = 6, width = 8)
+# #pdf(paste0(filepath, "DOXYPEP_IncALL.pdf"), height = 6, width = 8)
+# inc <- ggplot() +
+#   geom_line(data = doxy_sim_all, aes(x = time/365, y = IR*365*100, col = factor(DoxyPEP)), size = 1) +
+#   geom_point(data = resB, aes(x = MinT/365, y = IR*365*100, col = factor(DoxyPEP)), size = 3, shape = 19) +
+#   theme_classic() + xlab("Years") + ylab("Incidence Rate (Cases/100 PY)") + labs(col = "DoxyPEP Uptake") + theme(text = element_text(size=15), legend.position = c(0.85, 0.25)) +
+#   scale_color_manual(values = c("#172869", "#6C6C9D","#1BB6AF", "#A6E000", "#FC6882", "#C70E7B"))
+# inc
+# #dev.off()
+# #ggsave(file = paste0(filepath, "DOXYPEP_IncALL.svg"), plot = inc, height = 6, width = 8)
 ```
 
 ```{r}
@@ -408,7 +419,7 @@ cumcases %>%
 
 ```{r}
 #Visualize PR and IRR relative to baseline (0% DoxyPEP uptake)
-#pdf(paste0(filepath, "DOXYPEP_PR_ALL.pdf"), height = 3, width = 3)
+#pdf(paste0(filepath, "SF4_DOXYPEP_PR_ALL.pdf"), height = 3, width = 3)
 PR <- ggplot() +
   geom_line(data = cumcases, aes(x = time/365, y = PR, col = factor(DoxyPEP)), size = 1) +
   geom_point(data = resB, aes(x = MinT/365, y = PR, col = factor(DoxyPEP)), size = 3, shape = 19) +
@@ -416,17 +427,17 @@ PR <- ggplot() +
   scale_color_manual(values = c("#172869", "#6C6C9D","#1BB6AF", "#A6E000", "#FC6882", "#C70E7B"))
 PR
 #dev.off()
-#ggsave(file = paste0(filepath, "DOXYPEP_PR_ALL.svg"), plot = PR, height = 3, width = 3)
+#ggsave(file = paste0(filepath, "SF4_DOXYPEP_PR_ALL.svg"), plot = PR, height = 3, width = 3)
 
-#pdf(paste0(filepath, "DOXYPEP_IRR_ALL.pdf"), height = 3, width = 3)
-IRR <- ggplot() +
-  geom_line(data = cumcases, aes(x = time/365, y = IRR, col = factor(DoxyPEP)), size = 1) +
-  geom_point(data = resB, aes(x = MinT/365, y = IRR, col = factor(DoxyPEP)), size = 3, shape = 19) +
-  theme_classic() + xlab("Years") + ylab("Incidence Rate Ratio") + labs(col = "DoxyPEP Uptake") + theme(text = element_text(size=15), legend.position = "none") +
-  scale_color_manual(values = c("#172869", "#6C6C9D","#1BB6AF", "#A6E000", "#FC6882", "#C70E7B"))
-IRR
-#dev.off()
-#ggsave(file = paste0(filepath, "DOXYPEP_IRR_ALL.svg"), plot = IRR, height = 3, width = 3)
+# #pdf(paste0(filepath, "DOXYPEP_IRR_ALL.pdf"), height = 3, width = 3)
+# IRR <- ggplot() +
+#   geom_line(data = cumcases, aes(x = time/365, y = IRR, col = factor(DoxyPEP)), size = 1) +
+#   geom_point(data = resB, aes(x = MinT/365, y = IRR, col = factor(DoxyPEP)), size = 3, shape = 19) +
+#   theme_classic() + xlab("Years") + ylab("Incidence Rate Ratio") + labs(col = "DoxyPEP Uptake") + theme(text = element_text(size=15), legend.position = "none") +
+#   scale_color_manual(values = c("#172869", "#6C6C9D","#1BB6AF", "#A6E000", "#FC6882", "#C70E7B"))
+# IRR
+# #dev.off()
+# #ggsave(file = paste0(filepath, "DOXYPEP_IRR_ALL.svg"), plot = IRR, height = 3, width = 3)
 ```
 
 

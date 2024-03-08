@@ -7,7 +7,7 @@
 
 # Change to your file path for folder where all doxy-PEP code is stored
 filepath <- "~/Documents/2021 Grad lab research/DOXYPEP/"
-setwd("~/Documents/2021 Grad lab research/DOXYPEP/DoxyPEPcode")
+setwd("~/Documents/2021 Grad lab research/DOXYPEP/DoxyPEPcode/Final_02.24/")
 
 # load necessary libraries
 library(knitr)
@@ -46,8 +46,8 @@ SensAnalyze <- function (fB_range, omega_b_range) {
 }
 
 SensResults <- SensAnalyze(fB_range, omega_b_range)
-#write.csv(SensResults, paste0(filepath, "SensResults_10.23.csv"))
-#SensResults <- read.csv(paste0(filepath, "SensResults_10.23.csv"))
+#write.csv(SensResults, paste0(filepath, "SensResults_02.24.csv"))
+#SensResults <- read.csv(paste0(filepath, "SensResults_02.24.csv"))
 
 #calculate model outcomes
 table_res <- SensResults %>% group_by(DoxyPEP, fB, omega_b) %>%
@@ -113,7 +113,7 @@ resB_20 <- cumcases %>%
 resB_20_rel <- left_join(resB_20,
                          resB_20 %>% filter(DoxyPEP == "0%") %>% select(fB, omega_b, CI20_noDoxyPEP = CI20),
                          by = c("fB", "omega_b")) %>%
-  mutate(Rel_CI20 = 1-CI20/CI20_noDoxyPEP)
+  mutate(Rel_CI20 = CI20/CI20_noDoxyPEP)
 
 #Visualize PR over time relative to baseline (0% DoxyPEP uptake), by properties of Drug B (Doxycycline)
 #pdf(paste0(filepath, "DOXYPEP_SensAnalysisPR.pdf"), height = 6, width = 8, encoding = "Greek.enc")
@@ -159,8 +159,8 @@ SensAnalyze <- function (kappa) {
 }
 
 SensResults2 <- SensAnalyze(kappa_range)
-#write.csv(SensResults2, paste0(filepath, "SensResults2_10.23.csv"))
-#SensResults2 <- read.csv(paste0(filepath, "SensResults2_10.23.csv"))
+#write.csv(SensResults2, paste0(filepath, "SensResults2_02_24.csv"))
+#SensResults2 <- read.csv(paste0(filepath, "SensResults2_02.24.csv"))
 
 #calculate model outcomes
 table_res2 <- SensResults2 %>% group_by(DoxyPEP, kappa) %>%
@@ -210,6 +210,16 @@ resB2 <- cumcases2 %>%
             IRR = IRR[time == MinT],
             CasesAverted = CasesAverted[time == MinT])
 
+resB_5 <- cumcases2 %>%
+  group_by(DoxyPEP, kappa) %>%
+  summarise(CI5 = CumInc[time == 1825]) %>%
+  ungroup()
+
+resB_5_rel <- left_join(resB_5,
+                         resB_5 %>% filter(DoxyPEP == "0%") %>% select(kappa, CI5_noDoxyPEP = CI5),
+                         by = c("kappa")) %>%
+  mutate(Rel_CI5 = CI5/CI5_noDoxyPEP)
+
 #Visualize PR over time relative to baseline (0% DoxyPEP uptake), by DoxyPEP effectiveness per exposure
 g2 <- ggplot() +
   geom_line(data = cumcases2, aes(x = time/365, y = PR, col = factor(DoxyPEP)), size = 1) +
@@ -220,8 +230,8 @@ g2 <- ggplot() +
   #scale_y_continuous(breaks = c(0, 250000, 500000, 750000), labels = c("0", "0.25 M", "0.5 M", "0.75 M")) +
   facet_grid(~paste0("\u03BA  = " , kappa)) + ggtitle("B.")
 
-library(gridExtra)
-#pdf(paste0(filepath, "DOXYPEP_SensAnalysisKAPPA.pdf"), height = 6, width = 8, encoding = "Greek.enc")
+#library(gridExtra)
+pdf(paste0(filepath, "DOXYPEP_SensAnalysisKAPPA.pdf"), height = 6, width = 8, encoding = "Greek.enc")
 grid.arrange(g1, g2, nrow = 2)
 #dev.off()
 

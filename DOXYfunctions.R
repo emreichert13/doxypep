@@ -149,6 +149,14 @@ estBetaParams <- function(mu, var) {
   return(params = list(alpha = alpha, beta = beta))
 }
 
+estGammaParams <- function(mu, var) {
+  
+  shape = (mu^2)/var
+  scale = var/mu
+  
+  return(params = list(shape = shape, scale = scale))
+}
+
 logit<-function(x) {log(x/(1-x))}
 
 ilogit <-function(x) {1/(1+exp(-x))}
