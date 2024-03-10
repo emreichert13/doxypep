@@ -2,7 +2,7 @@
 # E Reichert 02.2024
 # 
 # Doxy-PEP Model Impact
-# with doxy-PEP only targeted to high sexual activity group (fixed 10% of population)
+# with doxy-PEP targeted to entire population (regardless of risk or sexual activity group)
 
 # GLOBAL Sensitivity Analysis - Sample select model parameters from distributions
 
