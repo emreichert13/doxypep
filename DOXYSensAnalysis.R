@@ -2,7 +2,7 @@
 # -----------------------------------------------#
 ## Run Sens Analysis for doxy-PEP modeling ##
 #  E Reichert, 03.2023
-#  Updated 10.2023
+#  Updated 03.2024
 # -----------------------------------------------#
 
 # Change to your file path for folder where all doxy-PEP code is stored
@@ -267,8 +267,8 @@ SensAnalyze <- function (resB) {
 }
 
 SensResults3 <- SensAnalyze(resB_range)
-#write.csv(SensResults3, paste0(filepath, "SensResults3_10.23.csv"))
-#SensResults3 <- read.csv(paste0(filepath, "SensResults3_10.23.csv"))
+write.csv(SensResults3, paste0(filepath, "SensResults3_03.24.csv"))
+#SensResults3 <- read.csv(paste0(filepath, "SensResults3_03.24.csv"))
 
 #calculate model outcomes
 table_res3 <- SensResults3 %>% group_by(DoxyPEP, resB) %>%
@@ -337,24 +337,66 @@ g4 <- ggplot() +
   facet_grid(~resB_cat) 
 
 library(gridExtra)
-#pdf(paste0(filepath, "DOXYPEP_SensAnalysisRESB.pdf"), height = 7, width = 9)
+pdf(paste0(filepath, "DOXYPEP_SensAnalysisRESB.pdf"), height = 7, width = 9)
 grid.arrange(g3, g4, nrow = 2)
-#dev.off()
+dev.off()
 
-# ##add resistance profiles over time plot
-# infectiondat <- SensResults3 %>%
-#   select(resB, DoxyPEP, time, Neither = prev0, prevA, prevB, Dual = prevAB) %>%
-#   mutate(Ceftriaxone = prevA-Dual,
-#          Doxy = prevB-Dual,
-#          totalprev = Neither + Ceftriaxone + Doxy + Dual) %>%
-#   select(-prevA, -prevB, -totalprev) %>%
-#   gather(., ResistState, percent, 4:7)
-# 
-# ggplot(infectiondat,aes(x=time/365, y=percent*100, fill = factor(ResistState, levels = c("Neither", "Doxy", "Ceftriaxone", "Dual")))) +
-#   geom_area() + scale_fill_manual(values = c("turquoise3", "#E9A17C", "mediumpurple", "deeppink2")) +
-#   theme_classic() + facet_grid(resB~DoxyPEP) +
-#   xlab("Years") + ylab("% of Gonococcal Infections") + labs(fill = "Resistance Profile") +
-#   theme(legend.position = c(0.84,0.2)) +
-#   geom_hline(yintercept = 5, col = "white", linetype = "dashed") + geom_hline(yintercept = 87, col = "white", linetype = "dotted") +
-#   geom_vline(xintercept = 10, col = 'white')
+# -----------------------------------------------#
+### IV. DOXY RESISTANCE AT MODEL START - Global Param Uncertainty###
+### IMPORTANT !!: Must first comment out baseline value for resB in "DOXYGlobalSens.R" script
+# -----------------------------------------------#
+
+# set range of resB values to explore
+resB_range <- c(0.05, 0.25, 0.50, 0.75)
+
+#run ODE models over all combinations of these params
+SensAnalyze <- function (resB) {
+  df <- data.frame()
+  #provide column names
+  for(j in resB)
+  {
+    resB <- j
+    source("DoxyGlobalSens.R", local = TRUE)
+    
+    output <- res_global %>%
+      mutate(resB = resB)
+    df <- rbind(df, output)
+  }
+  return(df)
+}
+
+SensResults3_global <- SensAnalyze(resB_range)
+write.csv(SensResults3_global, paste0(filepath, "SensResults3_Global_03.24.csv"))
+
+SensResults3_global %>%
+  group_by(DoxyPEP, resB) %>%
+  summarise(TimeA_inf = sum(TimeA == Inf)/500,
+            TimeAB_inf = sum(TimeAB == Inf)/500,
+            TimeB_inf = sum(TimeB == Inf)/500)
+
+# replace Inf values with value > 20 yrs 
+res_global <- SensResults3_global %>% mutate_if(is.numeric, function(x) ifelse(is.infinite(x), 7301/365, x))
+
+# Summarize median, q25, and q75 for outcomes across model simulations, 
+# by Doxy-PEP and starting level of resistance
+res_median <- res_global %>%
+  group_by(DoxyPEP, resB) %>%
+  summarise_each(funs(median), 
+                 Prev5, Prev20, Rel_PR5, Rel_PR20, MinPR,
+                 TimeA, TimeAB, TimeB, 
+                 Rel_CI5, Rel_CI20, 
+                 Rel_A5, Rel_A20) %>%
+  ungroup
+
+res_25 <- res_global %>%
+  group_by(DoxyPEP, resB) %>%
+  summarise_each(funs(quantile(., 0.25)), TimeA, TimeAB, TimeB, Rel_PR5, Rel_PR20, 
+                 Rel_CI5, Rel_CI20, Rel_A5, Rel_A20) %>%
+  ungroup
+
+res_75 <- res_global %>%
+  group_by(DoxyPEP, resB) %>%
+  summarise_each(funs(quantile(., 0.75)), TimeA, TimeAB, TimeB, Rel_PR5, Rel_PR20, 
+                 Rel_CI5, Rel_CI20, Rel_A5, Rel_A20) %>%
+  ungroup
 
