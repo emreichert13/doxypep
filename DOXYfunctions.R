@@ -125,7 +125,7 @@ SI.outputs <- function(data, data_long) {
        LossA_1 = LossA_1, LossB_1 = LossB_1, LossAB_1 = LossAB_1)
 }
 
-# calculate GC prevalence based on current parameters, for calibration
+# calculate GC prevalence at 2 year equilibrium based on current parameters, for calibration
 pred_fun_er <- function(params){
   params2 <- list(pop=10^6, pop.p=c(0.3, 0.6, 0.1), rho = 1/(20*365), 
                   prA = 1, omega_a = 10^-8, fA = 0.98, 
@@ -137,7 +137,7 @@ pred_fun_er <- function(params){
   calibration_sim <- round(calibration_sim, 0)
   end <- calibration_sim[nrow(calibration_sim),]
   #Overall prevalence of gonorrhea at t=end years
-  prev_GC <- sum(end[,8:22])/sum(end[,2:22])
+  prev_GC <- sum(end[,c(8:13,17:22)])/sum(end[,2:22])
   prev_GC
   return(prev_GC)
 }
